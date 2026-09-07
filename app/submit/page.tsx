@@ -1,0 +1,21 @@
+import { ProjectForm } from "@/components/ProjectForm";
+import { submitProjectAction } from "./actions";
+
+export default function SubmitPage() {
+  return (
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+      <div className="flex flex-col gap-2">
+        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl shadow-sm" aria-hidden="true">
+          🚀
+        </span>
+        <h1 className="text-2xl font-bold sm:text-3xl">프로젝트 제출하기</h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          제출한 프로젝트는 바로 전시되지 않아요. 선생님이 검토한 뒤 &apos;전시중&apos; 상태로
+          바뀌면 방문자에게 공개됩니다. 실명, 학번, 이메일 등 개인정보는 적지 말고 팀 이름이나
+          별명을 사용해 주세요.
+        </p>
+      </div>
+      <ProjectForm action={submitProjectAction} submitLabel="제출하기" />
+    </div>
+  );
+}
