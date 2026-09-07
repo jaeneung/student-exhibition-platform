@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const NAV_LINKS = [
   { href: "/", label: "전시 둘러보기" },
+  { href: "/guide", label: "제출 가이드" },
   { href: "/submit", label: "프로젝트 제출하기" },
   { href: "/manage", label: "프로젝트 관리 (교사용)" },
 ];

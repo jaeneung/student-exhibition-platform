@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ProjectForm } from "@/components/ProjectForm";
 import { submitProjectAction } from "./actions";
 
@@ -14,6 +15,12 @@ export default function SubmitPage() {
           선생님이 검토한 뒤 &apos;전시중&apos; 상태로 바뀌면 방문자에게 공개됩니다. 실명, 학번,
           이메일 등 개인정보는 적지 말고 팀 이름이나 별명을 사용해 주세요.
         </p>
+        <Link
+          href="/guide"
+          className="inline-flex w-fit items-center gap-1.5 rounded-full bg-brand-50 px-3.5 py-1.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:bg-brand-950 dark:text-brand-300"
+        >
+          📖 처음이신가요? 제출 가이드 먼저 보기
+        </Link>
       </div>
       <ProjectForm action={submitProjectAction} submitLabel="제출하기" />
     </div>
