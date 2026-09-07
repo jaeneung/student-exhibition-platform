@@ -1,5 +1,6 @@
 [build]
-  command = "npm run build"
+  # See scripts/netlify-build.mjs for why this isn't a plain `next build`.
+  command = "node scripts/netlify-build.mjs"
   publish = ".next"
 
 [[plugins]]

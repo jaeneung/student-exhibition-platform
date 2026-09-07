@@ -8,6 +8,13 @@ import { changeStatusAction } from "../actions";
 
 const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "private"];
 
+// Without this, Next.js's automatic static optimization prerenders this page
+// once at build time (it has no searchParams/dynamic params to hint otherwise)
+// and serves that snapshot forever — so submissions and status changes made
+// after deploy would never show up here. Verified: this page built as a
+// static (○) route until this was added, unlike every other page here.
+export const dynamic = "force-dynamic";
+
 export default async function ManagePage() {
   const projects = await getAllProjects();
 

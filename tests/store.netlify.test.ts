@@ -27,11 +27,11 @@ const baseSubmission: ProjectSubmissionInput = {
 describe("store on Netlify (Blobs backend)", () => {
   beforeEach(() => {
     blobData.clear();
-    process.env.NETLIFY = "true";
+    process.env.NETLIFY_BLOBS_CONTEXT = "test-context";
   });
 
   afterEach(() => {
-    delete process.env.NETLIFY;
+    delete process.env.NETLIFY_BLOBS_CONTEXT;
   });
 
   it("seeds from sample data on first read, same as the file backend", async () => {
