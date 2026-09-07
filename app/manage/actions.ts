@@ -1,13 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getDictionary } from "@/lib/dictionary";
 import {
   managementValuesToProjectFields,
   readProjectFormData,
   zodIssuesToFieldErrors,
   type FormActionState,
 } from "@/lib/formAction";
-import { managementSchema } from "@/lib/schema";
+import { getLocale } from "@/lib/i18n";
+import { getManagementSchema } from "@/lib/schema";
 import { getProjectByIdForManagement, updateProject } from "@/lib/store";
 import type { ExhibitionStatus, Project, ProjectUpdateInput } from "@/lib/types";
 
@@ -46,8 +48,9 @@ export async function updateProjectAction(
   _prevState: FormActionState,
   formData: FormData
 ): Promise<FormActionState> {
+  const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
-  const parsed = managementSchema.safeParse(raw);
+  const parsed = getManagementSchema(dict).safeParse(raw);
 
   if (!parsed.success) {
     return { status: "error", errors: zodIssuesToFieldErrors(parsed.error) };
@@ -55,12 +58,12 @@ export async function updateProjectAction(
 
   const updated = await updateProject(id, managementValuesToProjectFields(parsed.data));
   if (!updated) {
-    return { status: "error", formError: "프로젝트를 찾을 수 없습니다." };
+    return { status: "error", formError: dict.validation.editNotFound };
   }
 
   revalidatePath("/manage");
   revalidatePath("/");
   revalidatePath(`/projects/${id}`);
 
-  return { status: "success", message: "저장되었습니다." };
+  return { status: "success", message: dict.validation.editSuccess };
 }

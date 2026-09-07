@@ -6,12 +6,6 @@ export const EXHIBITION_STATUSES = [
 
 export type ExhibitionStatus = (typeof EXHIBITION_STATUSES)[number];
 
-export const EXHIBITION_STATUS_LABELS: Record<ExhibitionStatus, string> = {
-  pending_review: "심사 대기중",
-  on_display: "전시중",
-  private: "비공개",
-};
-
 export const PROJECT_CATEGORIES = [
   "웹사이트",
   "게임",

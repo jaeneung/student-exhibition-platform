@@ -153,9 +153,11 @@ function isDuplicateSubmission(
   );
 }
 
+/** Marker error only — the caller (app/submit/actions.ts) knows the visitor's
+ * locale and supplies the actual user-facing message, so none is set here. */
 export class DuplicateSubmissionError extends Error {
   constructor() {
-    super("이미 같은 내용으로 최근에 제출된 프로젝트가 있습니다.");
+    super("Duplicate submission");
     this.name = "DuplicateSubmissionError";
   }
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { EXHIBITION_STATUSES, EXHIBITION_STATUS_LABELS, PROJECT_CATEGORIES } from "@/lib/types";
+import type { Dictionary } from "@/lib/dictionary";
+import { EXHIBITION_STATUSES, PROJECT_CATEGORIES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
 import type { FormActionState } from "@/lib/formAction";
 
@@ -106,11 +107,13 @@ const inputClass =
   "rounded-xl border border-zinc-300 px-3 py-2.5 text-base transition focus-visible:border-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:bg-zinc-950";
 
 export function ProjectForm({
+  dict,
   action,
   project,
   includeStatus = false,
   submitLabel,
 }: {
+  dict: Dictionary;
   action: (prevState: FormActionState, formData: FormData) => Promise<FormActionState>;
   project?: Project;
   includeStatus?: boolean;
@@ -124,6 +127,7 @@ export function ProjectForm({
   // new submission starts with the optional section collapsed to keep the
   // first view short.
   const isEditing = Boolean(project);
+  const f = dict.form;
 
   return (
     <form action={formAction} noValidate className="flex flex-col gap-6">
@@ -146,13 +150,10 @@ export function ProjectForm({
         </div>
       )}
 
-      <FormSection icon="📌" title="필수 정보">
-        <p className="-mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          아래 항목만 채우면 바로 제출할 수 있어요. 더 소개하고 싶은 내용이 있다면 맨 아래
-          &apos;추가 정보&apos;에 적어 주세요.
-        </p>
+      <FormSection icon="📌" title={f.requiredSectionTitle}>
+        <p className="-mt-1 text-sm text-zinc-500 dark:text-zinc-400">{f.requiredSectionHint}</p>
 
-        <Field id="title" label="프로젝트 제목" required error={errors.title}>
+        <Field id="title" label={f.title} required error={errors.title}>
           <input
             id="title"
             name="title"
@@ -162,11 +163,11 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
             className={inputClass}
-            placeholder="예: 탄소발자국 계산기"
+            placeholder={f.titlePlaceholder}
           />
         </Field>
 
-        <Field id="creatorName" label="제작자 / 팀 이름" required error={errors.creatorName}>
+        <Field id="creatorName" label={f.creatorName} required error={errors.creatorName}>
           <input
             id="creatorName"
             name="creatorName"
@@ -176,11 +177,11 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.creatorName)}
             aria-describedby={errors.creatorName ? "creatorName-error" : undefined}
             className={inputClass}
-            placeholder="실명 대신 팀 이름이나 별명을 사용해 주세요"
+            placeholder={f.creatorNamePlaceholder}
           />
         </Field>
 
-        <Field id="category" label="카테고리" required error={errors.category}>
+        <Field id="category" label={f.category} required error={errors.category}>
           <select
             id="category"
             name="category"
@@ -191,17 +192,17 @@ export function ProjectForm({
             className={inputClass}
           >
             <option value="" disabled>
-              선택해 주세요
+              {f.categoryPlaceholder}
             </option>
             {PROJECT_CATEGORIES.map((c) => (
               <option key={c} value={c}>
-                {c}
+                {dict.categories[c] ?? c}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field id="shortDescription" label="한 줄 소개" required error={errors.shortDescription}>
+        <Field id="shortDescription" label={f.shortDescription} required error={errors.shortDescription}>
           <textarea
             id="shortDescription"
             name="shortDescription"
@@ -212,11 +213,11 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.shortDescription)}
             aria-describedby={errors.shortDescription ? "shortDescription-error" : undefined}
             className={inputClass}
-            placeholder="예: 오늘의 소비 습관으로 탄소 배출량을 계산해 주는 웹사이트예요."
+            placeholder={f.shortDescriptionPlaceholder}
           />
         </Field>
 
-        <Field id="fullDescription" label="상세 설명" required error={errors.fullDescription}>
+        <Field id="fullDescription" label={f.fullDescription} required error={errors.fullDescription}>
           <textarea
             id="fullDescription"
             name="fullDescription"
@@ -226,17 +227,11 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.fullDescription)}
             aria-describedby={errors.fullDescription ? "fullDescription-error" : undefined}
             className={inputClass}
-            placeholder="어떤 프로젝트인지 2~3문장으로 자유롭게 설명해 주세요."
+            placeholder={f.fullDescriptionPlaceholder}
           />
         </Field>
 
-        <Field
-          id="launchUrl"
-          label="실행 링크"
-          required
-          hint="Replit, Glitch, Netlify, Vercel, v0, bolt.new, lovable.dev 같은 곳에 올린 링크를 붙여넣어 주세요."
-          error={errors.launchUrl}
-        >
+        <Field id="launchUrl" label={f.launchUrl} required hint={f.launchUrlHint} error={errors.launchUrl}>
           <input
             id="launchUrl"
             name="launchUrl"
@@ -246,7 +241,7 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.launchUrl)}
             aria-describedby={errors.launchUrl ? "launchUrl-error" : "launchUrl-hint"}
             className={inputClass}
-            placeholder="https://..."
+            placeholder={f.launchUrlPlaceholder}
           />
         </Field>
 
@@ -259,24 +254,24 @@ export function ProjectForm({
             className="h-5 w-5 rounded border-zinc-300 text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           />
           <label htmlFor="handsOnAvailable" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            지금 바로 체험 가능
+            {f.handsOnAvailable}
           </label>
         </div>
       </FormSection>
 
-      <CollapsibleSection icon="➕" title="추가 정보 (선택)" defaultOpen={isEditing}>
-        <Field id="tags" label="태그 (쉼표로 구분)" error={errors.tags}>
+      <CollapsibleSection icon="➕" title={f.optionalSectionTitle} defaultOpen={isEditing}>
+        <Field id="tags" label={f.tags} error={errors.tags}>
           <input
             id="tags"
             name="tags"
             type="text"
             defaultValue={project?.tags.join(", ")}
             className={inputClass}
-            placeholder="예: 게임, 퀴즈, 코딩교육"
+            placeholder={f.tagsPlaceholder}
           />
         </Field>
 
-        <Field id="coverImageUrl" label="대표 이미지 URL" error={errors.coverImageUrl}>
+        <Field id="coverImageUrl" label={f.coverImageUrl} error={errors.coverImageUrl}>
           <input
             id="coverImageUrl"
             name="coverImageUrl"
@@ -285,22 +280,22 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.coverImageUrl)}
             aria-describedby={errors.coverImageUrl ? "coverImageUrl-error" : undefined}
             className={inputClass}
-            placeholder="https://..."
+            placeholder={f.coverImageUrlPlaceholder}
           />
         </Field>
 
-        <Field id="technologies" label="사용한 기술 (쉼표로 구분)" error={errors.technologies}>
+        <Field id="technologies" label={f.technologies} error={errors.technologies}>
           <input
             id="technologies"
             name="technologies"
             type="text"
             defaultValue={project?.technologies.join(", ")}
             className={inputClass}
-            placeholder="예: React, Python, Three.js"
+            placeholder={f.technologiesPlaceholder}
           />
         </Field>
 
-        <Field id="motivation" label="만들게 된 계기" error={errors.motivation}>
+        <Field id="motivation" label={f.motivation} error={errors.motivation}>
           <textarea
             id="motivation"
             name="motivation"
@@ -310,7 +305,7 @@ export function ProjectForm({
           />
         </Field>
 
-        <Field id="usageInstructions" label="사용 방법" error={errors.usageInstructions}>
+        <Field id="usageInstructions" label={f.usageInstructions} error={errors.usageInstructions}>
           <textarea
             id="usageInstructions"
             name="usageInstructions"
@@ -320,7 +315,7 @@ export function ProjectForm({
           />
         </Field>
 
-        <Field id="safetyNotes" label="안전 및 이용 안내" error={errors.safetyNotes}>
+        <Field id="safetyNotes" label={f.safetyNotes} error={errors.safetyNotes}>
           <textarea
             id="safetyNotes"
             name="safetyNotes"
@@ -332,8 +327,8 @@ export function ProjectForm({
       </CollapsibleSection>
 
       {includeStatus && (
-        <FormSection icon="🚦" title="전시 상태">
-          <Field id="status" label="전시 상태" required error={errors.status}>
+        <FormSection icon="🚦" title={f.statusSectionTitle}>
+          <Field id="status" label={f.status} required error={errors.status}>
             <select
               id="status"
               name="status"
@@ -343,7 +338,7 @@ export function ProjectForm({
             >
               {EXHIBITION_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {EXHIBITION_STATUS_LABELS[s]}
+                  {dict.status[s]}
                 </option>
               ))}
             </select>
@@ -356,7 +351,7 @@ export function ProjectForm({
         disabled={isPending}
         className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 text-base font-semibold text-white shadow-md shadow-brand-600/30 transition hover:from-brand-700 hover:to-brand-800 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
       >
-        {isPending ? "저장 중..." : submitLabel}
+        {isPending ? f.submitButtonSaving : submitLabel}
       </button>
     </form>
   );

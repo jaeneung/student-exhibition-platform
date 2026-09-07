@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { managementSchema, parseListField, submissionSchema } from "@/lib/schema";
+import { getDictionary } from "@/lib/dictionary";
+import { getManagementSchema, getSubmissionSchema, parseListField } from "@/lib/schema";
+
+const dict = getDictionary("ko");
+const submissionSchema = getSubmissionSchema(dict);
+const managementSchema = getManagementSchema(dict);
 
 const validSubmission = {
   title: "탄소발자국 계산기",
@@ -77,6 +82,28 @@ describe("managementSchema", () => {
       managementSchema.safeParse({ ...validSubmission, status: "not_a_status" }).success
     ).toBe(false);
     expect(managementSchema.safeParse({ ...validSubmission }).success).toBe(false);
+  });
+});
+
+describe("getSubmissionSchema locale messages", () => {
+  it("produces localized error messages matching the requested dictionary", () => {
+    const koResult = getSubmissionSchema(getDictionary("ko")).safeParse({
+      ...validSubmission,
+      title: "",
+    });
+    const enResult = getSubmissionSchema(getDictionary("en")).safeParse({
+      ...validSubmission,
+      title: "",
+    });
+    expect(koResult.success).toBe(false);
+    expect(enResult.success).toBe(false);
+    if (!koResult.success && !enResult.success) {
+      const koMessage = koResult.error.issues.find((i) => i.path[0] === "title")?.message;
+      const enMessage = enResult.error.issues.find((i) => i.path[0] === "title")?.message;
+      expect(koMessage).toBe(getDictionary("ko").validation.titleMin);
+      expect(enMessage).toBe(getDictionary("en").validation.titleMin);
+      expect(koMessage).not.toBe(enMessage);
+    }
   });
 });
 

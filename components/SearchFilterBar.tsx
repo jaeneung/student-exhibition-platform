@@ -1,12 +1,15 @@
 import Link from "next/link";
+import type { Dictionary } from "@/lib/dictionary";
 
 export function SearchFilterBar({
+  dict,
   q,
   category,
   tag,
   categories,
   tags,
 }: {
+  dict: Dictionary;
   q?: string;
   category?: string;
   tag?: string;
@@ -19,12 +22,12 @@ export function SearchFilterBar({
     <form
       method="get"
       role="search"
-      aria-label="전시 프로젝트 검색 및 필터"
+      aria-label={dict.search.ariaLabel}
       className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm sm:flex-row sm:flex-wrap sm:items-end dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="flex min-w-[200px] flex-1 flex-col gap-1.5">
         <label htmlFor="q" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          검색
+          {dict.search.label}
         </label>
         <div className="relative">
           <svg
@@ -41,7 +44,7 @@ export function SearchFilterBar({
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="프로젝트 제목이나 설명으로 검색"
+            placeholder={dict.search.placeholder}
             className="h-11 w-full rounded-xl border border-zinc-300 bg-white pl-9 pr-3 text-base transition focus-visible:border-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:bg-zinc-950"
           />
         </div>
@@ -49,7 +52,7 @@ export function SearchFilterBar({
 
       <div className="flex min-w-[140px] flex-col gap-1.5">
         <label htmlFor="category" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          카테고리
+          {dict.search.category}
         </label>
         <select
           id="category"
@@ -57,10 +60,10 @@ export function SearchFilterBar({
           defaultValue={category ?? ""}
           className="h-11 rounded-xl border border-zinc-300 bg-white px-3 text-base transition focus-visible:border-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:bg-zinc-950"
         >
-          <option value="">전체</option>
+          <option value="">{dict.search.all}</option>
           {categories.map((c) => (
             <option key={c} value={c}>
-              {c}
+              {dict.categories[c] ?? c}
             </option>
           ))}
         </select>
@@ -68,7 +71,7 @@ export function SearchFilterBar({
 
       <div className="flex min-w-[140px] flex-col gap-1.5">
         <label htmlFor="tag" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          태그
+          {dict.search.tag}
         </label>
         <select
           id="tag"
@@ -76,7 +79,7 @@ export function SearchFilterBar({
           defaultValue={tag ?? ""}
           className="h-11 rounded-xl border border-zinc-300 bg-white px-3 text-base transition focus-visible:border-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:bg-zinc-950"
         >
-          <option value="">전체</option>
+          <option value="">{dict.search.all}</option>
           {tags.map((t) => (
             <option key={t} value={t}>
               #{t}
@@ -90,14 +93,14 @@ export function SearchFilterBar({
           type="submit"
           className="h-11 rounded-xl bg-brand-600 px-5 text-base font-medium text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
         >
-          검색
+          {dict.search.submit}
         </button>
         {hasActiveFilters && (
           <Link
             href="/"
             className="flex h-11 items-center rounded-xl border border-zinc-300 px-4 text-base font-medium text-zinc-700 transition hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
           >
-            필터 초기화
+            {dict.gallery.clearFilters}
           </Link>
         )}
       </div>

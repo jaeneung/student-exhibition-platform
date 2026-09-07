@@ -1,17 +1,21 @@
 import Link from "next/link";
 import type { Project } from "@/lib/types";
 import { getCategoryStyle } from "@/lib/categoryStyles";
+import type { Dictionary } from "@/lib/dictionary";
 import { StatusBadge } from "./StatusBadge";
 
 export function ProjectCard({
   project,
+  dict,
   showStatus = false,
 }: {
   project: Project;
+  dict: Dictionary;
   showStatus?: boolean;
 }) {
   const primaryTags = project.tags.slice(0, 3);
   const { icon, gradient } = getCategoryStyle(project.category);
+  const categoryLabel = dict.categories[project.category] ?? project.category;
 
   return (
     <Link
@@ -36,13 +40,13 @@ export function ProjectCard({
         )}
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2.5">
           <span className="rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-            {project.category}
+            {categoryLabel}
           </span>
-          {showStatus && <StatusBadge status={project.status} />}
+          {showStatus && <StatusBadge status={project.status} label={dict.status[project.status]} />}
         </div>
         {!project.handsOnAvailable && (
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 py-2 text-xs font-medium text-white">
-            체험 일시중지
+            {dict.card.handsOnPaused}
           </div>
         )}
       </div>

@@ -1,17 +1,19 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { getDictionary } from "@/lib/dictionary";
+import { getLocale } from "@/lib/i18n";
+import { HeaderNav } from "./HeaderNav";
+import { LanguageToggle } from "./LanguageToggle";
 
-const NAV_LINKS = [
-  { href: "/", label: "전시 둘러보기" },
-  { href: "/guide", label: "제출 가이드" },
-  { href: "/submit", label: "프로젝트 제출하기" },
-  { href: "/manage", label: "프로젝트 관리 (교사용)" },
-];
+export async function Header() {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
 
-export function Header() {
-  const pathname = usePathname();
+  const links = [
+    { href: "/", label: dict.nav.gallery },
+    { href: "/guide", label: dict.nav.guide },
+    { href: "/submit", label: dict.nav.submit },
+    { href: "/manage", label: dict.nav.manage },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/80 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/80">
@@ -26,30 +28,17 @@ export function Header() {
           >
             🎓
           </span>
-          <span className="leading-tight">
-            학생 디지털 프로젝트
-            <br className="sm:hidden" /> 전시관
-          </span>
+          <span className="leading-tight">{dict.brand.name}</span>
         </Link>
-        <nav aria-label="주요 메뉴" className="flex flex-wrap gap-1">
-          {NAV_LINKS.map((link) => {
-            const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={isActive ? "page" : undefined}
-                className={`rounded-full px-3.5 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 ${
-                  isActive
-                    ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30"
-                    : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex flex-wrap items-center gap-2">
+          <HeaderNav ariaLabel={dict.nav.ariaLabel} links={links} />
+          <LanguageToggle
+            locale={locale}
+            ariaLabel={dict.language.ariaLabel}
+            koLabel={dict.language.ko}
+            enLabel={dict.language.en}
+          />
+        </div>
       </div>
     </header>
   );

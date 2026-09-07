@@ -1,21 +1,24 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getDictionary } from "@/lib/dictionary";
 import {
   readProjectFormData,
   submissionValuesToProjectFields,
   zodIssuesToFieldErrors,
   type FormActionState,
 } from "@/lib/formAction";
-import { submissionSchema } from "@/lib/schema";
+import { getLocale } from "@/lib/i18n";
+import { getSubmissionSchema } from "@/lib/schema";
 import { createProject, DuplicateSubmissionError } from "@/lib/store";
 
 export async function submitProjectAction(
   _prevState: FormActionState,
   formData: FormData
 ): Promise<FormActionState> {
+  const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
-  const parsed = submissionSchema.safeParse(raw);
+  const parsed = getSubmissionSchema(dict).safeParse(raw);
 
   if (!parsed.success) {
     return { status: "error", errors: zodIssuesToFieldErrors(parsed.error) };
@@ -26,17 +29,16 @@ export async function submitProjectAction(
     revalidatePath("/manage");
     return {
       status: "success",
-      message:
-        "프로젝트가 제출되었습니다! 선생님이 검토한 뒤 '전시중' 상태로 바뀌면 방문자에게 공개됩니다.",
+      message: dict.validation.submitSuccess,
       projectId: project.id,
     };
   } catch (err) {
     if (err instanceof DuplicateSubmissionError) {
-      return { status: "error", formError: err.message };
+      return { status: "error", formError: dict.validation.duplicateSubmission };
     }
     return {
       status: "error",
-      formError: "제출 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+      formError: dict.validation.submitGenericError,
     };
   }
 }

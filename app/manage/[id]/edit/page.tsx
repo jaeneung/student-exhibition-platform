@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProjectForm } from "@/components/ProjectForm";
+import { getDictionary } from "@/lib/dictionary";
+import { getLocale } from "@/lib/i18n";
 import { getProjectByIdForManagement } from "@/lib/store";
 import { updateProjectAction } from "../../actions";
 
@@ -9,6 +11,7 @@ export default async function EditProjectPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const dict = getDictionary(await getLocale());
   const { id } = await params;
   const project = await getProjectByIdForManagement(id);
 
@@ -23,18 +26,19 @@ export default async function EditProjectPage({
           href="/manage"
           className="w-fit text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
         >
-          ← 프로젝트 관리로 돌아가기
+          {dict.manage.backToManage}
         </Link>
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl shadow-sm" aria-hidden="true">
           ✏️
         </span>
-        <h1 className="text-2xl font-bold sm:text-3xl">프로젝트 수정</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{dict.manage.editTitle}</h1>
       </div>
       <ProjectForm
+        dict={dict}
         action={updateProjectAction.bind(null, project.id)}
         project={project}
         includeStatus
-        submitLabel="수정 저장"
+        submitLabel={dict.manage.editSubmitLabel}
       />
     </div>
   );

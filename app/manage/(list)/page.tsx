@@ -2,8 +2,10 @@ import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCategoryStyle } from "@/lib/categoryStyles";
+import { format, getDictionary } from "@/lib/dictionary";
+import { getLocale } from "@/lib/i18n";
 import { getAllProjects } from "@/lib/store";
-import { EXHIBITION_STATUS_LABELS, EXHIBITION_STATUSES, type ExhibitionStatus } from "@/lib/types";
+import { EXHIBITION_STATUSES, type ExhibitionStatus } from "@/lib/types";
 import { changeStatusAction } from "../actions";
 
 const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "private"];
@@ -16,6 +18,7 @@ const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "priva
 export const dynamic = "force-dynamic";
 
 export default async function ManagePage() {
+  const dict = getDictionary(await getLocale());
   const projects = await getAllProjects();
 
   return (
@@ -24,10 +27,8 @@ export default async function ManagePage() {
         <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl shadow-sm" aria-hidden="true">
           🗂️
         </span>
-        <h1 className="text-2xl font-bold sm:text-3xl">프로젝트 관리</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          제출된 프로젝트를 검토하고 전시 상태를 바꿀 수 있어요.
-        </p>
+        <h1 className="text-2xl font-bold sm:text-3xl">{dict.manage.title}</h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">{dict.manage.subtitle}</p>
       </div>
 
       <div
@@ -36,19 +37,13 @@ export default async function ManagePage() {
       >
         <span aria-hidden="true">⚠️</span>
         <p>
-          <strong className="font-semibold">MVP 안내: </strong>
-          이 관리 화면은 아직 로그인으로 보호되지 않아, 이 페이지 주소를 아는 누구나 접근할 수
-          있습니다. 실제 학교 현장에서 사용하기 전에 반드시 교사 로그인 등 접근 제한을 추가해야
-          합니다.
+          <strong className="font-semibold">{dict.manage.mvpNoticeLabel} </strong>
+          {dict.manage.mvpNoticeText}
         </p>
       </div>
 
       {projects.length === 0 ? (
-        <EmptyState
-          icon="🗂️"
-          title="아직 제출된 프로젝트가 없어요"
-          message="학생이 프로젝트를 제출하면 여기에서 검토할 수 있어요."
-        />
+        <EmptyState icon="🗂️" title={dict.manage.emptyTitle} message={dict.manage.emptyMessage} />
       ) : (
         STATUS_ORDER.map((status) => {
           const group = projects.filter((p) => p.status === status);
@@ -56,7 +51,7 @@ export default async function ManagePage() {
           return (
             <section key={status} className="flex flex-col gap-3">
               <h2 className="text-lg font-semibold">
-                {EXHIBITION_STATUS_LABELS[status]} ({group.length})
+                {dict.status[status]} ({group.length})
               </h2>
               <ul className="flex flex-col gap-3">
                 {group.map((project) => {
@@ -75,13 +70,13 @@ export default async function ManagePage() {
                             <span className="font-semibold text-zinc-900 dark:text-zinc-50">
                               {project.title}
                             </span>
-                            <StatusBadge status={project.status} />
+                            <StatusBadge status={project.status} label={dict.status[project.status]} />
                             {!project.handsOnAvailable && (
-                              <span className="text-xs text-zinc-500">체험 일시중지</span>
+                              <span className="text-xs text-zinc-500">{dict.card.handsOnPaused}</span>
                             )}
                           </div>
                           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                            {project.category} · {project.creatorName}
+                            {dict.categories[project.category] ?? project.category} · {project.creatorName}
                           </span>
                         </div>
                       </div>
@@ -91,7 +86,7 @@ export default async function ManagePage() {
                           href={`/manage/${project.id}/edit`}
                           className="rounded-xl border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
                         >
-                          상세 수정
+                          {dict.manage.editLink}
                         </Link>
                         {EXHIBITION_STATUSES.filter((s) => s !== project.status).map((s) => (
                           <form key={s} action={changeStatusAction.bind(null, project.id, s)}>
@@ -99,7 +94,7 @@ export default async function ManagePage() {
                               type="submit"
                               className="rounded-xl bg-brand-600 px-3 py-2 text-sm font-medium text-white shadow-sm shadow-brand-600/30 transition hover:bg-brand-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
                             >
-                              {EXHIBITION_STATUS_LABELS[s]}(으)로 전환
+                              {format(dict.manage.switchTo, { status: dict.status[s] })}
                             </button>
                           </form>
                         ))}
