@@ -10,9 +10,9 @@ export default function SubmitPage() {
         </span>
         <h1 className="text-2xl font-bold sm:text-3xl">프로젝트 제출하기</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          제출한 프로젝트는 바로 전시되지 않아요. 선생님이 검토한 뒤 &apos;전시중&apos; 상태로
-          바뀌면 방문자에게 공개됩니다. 실명, 학번, 이메일 등 개인정보는 적지 말고 팀 이름이나
-          별명을 사용해 주세요.
+          6개 항목만 채우면 1분 안에 제출할 수 있어요. 제출한 프로젝트는 바로 전시되지 않고,
+          선생님이 검토한 뒤 &apos;전시중&apos; 상태로 바뀌면 방문자에게 공개됩니다. 실명, 학번,
+          이메일 등 개인정보는 적지 말고 팀 이름이나 별명을 사용해 주세요.
         </p>
       </div>
       <ProjectForm action={submitProjectAction} submitLabel="제출하기" />

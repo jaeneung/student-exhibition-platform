@@ -8,6 +8,12 @@ import type { Project } from "./types";
  */
 const now = "2026-08-20T00:00:00.000Z";
 
+// The 5 on_display samples link to small, real, working demo pages built into
+// this same app (app/demo/*) instead of a dead placeholder, so "실행하기"
+// (Launch) actually does something when visitors try it. Hardcoded to the
+// deployed production URL — see README "배포" for the live address.
+const DEMO_BASE_URL = "https://student-exhibition-platform.netlify.app";
+
 export const sampleProjects: Project[] = [
   {
     id: "sample-carbon-tracker",
@@ -23,7 +29,7 @@ export const sampleProjects: Project[] = [
     usageInstructions: "하단 입력창에 오늘의 이동 수단과 식사 종류를 선택하면 즉시 결과가 표시됩니다.",
     safetyNotes: undefined,
     technologies: ["HTML", "CSS", "JavaScript"],
-    launchUrl: "https://example.com/exhibits/carbon-tracker",
+    launchUrl: `${DEMO_BASE_URL}/demo/carbon-tracker`,
     status: "on_display",
     handsOnAvailable: true,
     createdAt: now,
@@ -43,7 +49,7 @@ export const sampleProjects: Project[] = [
     usageInstructions: "화면의 '시작하기' 버튼을 누른 뒤 방향키로 이동하고, 스페이스바로 정답을 선택하세요.",
     safetyNotes: "일부 효과음이 재생되니 헤드셋 사용을 권장합니다.",
     technologies: ["JavaScript", "Canvas API"],
-    launchUrl: "https://example.com/exhibits/code-maze",
+    launchUrl: `${DEMO_BASE_URL}/demo/code-maze`,
     status: "on_display",
     handsOnAvailable: true,
     createdAt: now,
@@ -63,7 +69,7 @@ export const sampleProjects: Project[] = [
     usageInstructions: "앱을 열고 오늘 날짜를 선택하면 추천 메뉴 카드가 나타납니다. 카드를 눌러 상세 설명을 볼 수 있습니다.",
     safetyNotes: undefined,
     technologies: ["React Native", "Expo"],
-    launchUrl: "https://example.com/exhibits/lunch-recommender",
+    launchUrl: `${DEMO_BASE_URL}/demo/lunch-recommender`,
     status: "on_display",
     handsOnAvailable: true,
     createdAt: now,
@@ -83,9 +89,9 @@ export const sampleProjects: Project[] = [
     usageInstructions: "채팅창에 고민을 입력하면 챗봇이 공감하는 답변과 함께 참고할 만한 조언을 제시합니다.",
     safetyNotes: "이 챗봇은 전문 상담을 대체할 수 없습니다. 긴급한 어려움이 있다면 반드시 선생님이나 상담 선생님께 알려주세요.",
     technologies: ["Python", "AI API 연동"],
-    launchUrl: "https://example.com/exhibits/maeumi-chatbot",
+    launchUrl: `${DEMO_BASE_URL}/demo/maeumi-chatbot`,
     status: "on_display",
-    handsOnAvailable: false,
+    handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
   },
@@ -103,7 +109,7 @@ export const sampleProjects: Project[] = [
     usageInstructions: "화면을 드래그해 시점을 돌리고, 행성을 터치하면 정보 카드가 나타납니다.",
     safetyNotes: undefined,
     technologies: ["Three.js", "WebGL"],
-    launchUrl: "https://example.com/exhibits/solar-system",
+    launchUrl: `${DEMO_BASE_URL}/demo/solar-system`,
     status: "on_display",
     handsOnAvailable: true,
     createdAt: now,

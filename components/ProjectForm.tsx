@@ -25,15 +25,54 @@ function FormSection({
   );
 }
 
+/** Native <details> — keyboard/AT accessible with no JS, so the "advanced"
+ * fields can start collapsed for a first-time student submitter (a shorter,
+ * less intimidating form) while still opening by default whenever there's
+ * existing data to review (editing from the management screen). */
+function CollapsibleSection({
+  icon,
+  title,
+  defaultOpen,
+  children,
+}: {
+  icon: string;
+  title: string;
+  defaultOpen: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="group rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 p-5 text-sm font-bold uppercase tracking-wide text-brand-700 sm:p-6 dark:text-brand-400">
+        <span className="flex items-center gap-2">
+          <span aria-hidden="true">{icon}</span>
+          {title}
+        </span>
+        <span
+          aria-hidden="true"
+          className="text-base normal-case text-zinc-400 transition group-open:rotate-180"
+        >
+          ⌄
+        </span>
+      </summary>
+      <div className="flex flex-col gap-5 p-5 pt-0 sm:p-6 sm:pt-0">{children}</div>
+    </details>
+  );
+}
+
 function Field({
   id,
   label,
+  hint,
   error,
   required,
   children,
 }: {
   id: string;
   label: string;
+  hint?: string;
   error?: string;
   required?: boolean;
   children: React.ReactNode;
@@ -48,6 +87,11 @@ function Field({
           </span>
         )}
       </label>
+      {hint && (
+        <p id={`${id}-hint`} className="text-xs text-zinc-500 dark:text-zinc-400">
+          {hint}
+        </p>
+      )}
       {children}
       {error && (
         <p id={`${id}-error`} role="alert" className="text-sm text-rose-600 dark:text-rose-400">
@@ -76,6 +120,10 @@ export function ProjectForm({
     status: "idle",
   });
   const errors = state.status === "error" ? state.errors ?? {} : {};
+  // Editing (management) always shows everything already filled in; a brand
+  // new submission starts with the optional section collapsed to keep the
+  // first view short.
+  const isEditing = Boolean(project);
 
   return (
     <form action={formAction} noValidate className="flex flex-col gap-6">
@@ -98,7 +146,12 @@ export function ProjectForm({
         </div>
       )}
 
-      <FormSection icon="📌" title="기본 정보">
+      <FormSection icon="📌" title="필수 정보">
+        <p className="-mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          아래 항목만 채우면 바로 제출할 수 있어요. 더 소개하고 싶은 내용이 있다면 맨 아래
+          &apos;추가 정보&apos;에 적어 주세요.
+        </p>
+
         <Field id="title" label="프로젝트 제목" required error={errors.title}>
           <input
             id="title"
@@ -109,6 +162,7 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
             className={inputClass}
+            placeholder="예: 탄소발자국 계산기"
           />
         </Field>
 
@@ -126,43 +180,28 @@ export function ProjectForm({
           />
         </Field>
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <Field id="category" label="카테고리" required error={errors.category}>
-            <select
-              id="category"
-              name="category"
-              required
-              defaultValue={project?.category ?? ""}
-              aria-invalid={Boolean(errors.category)}
-              aria-describedby={errors.category ? "category-error" : undefined}
-              className={inputClass}
-            >
-              <option value="" disabled>
-                선택해 주세요
+        <Field id="category" label="카테고리" required error={errors.category}>
+          <select
+            id="category"
+            name="category"
+            required
+            defaultValue={project?.category ?? ""}
+            aria-invalid={Boolean(errors.category)}
+            aria-describedby={errors.category ? "category-error" : undefined}
+            className={inputClass}
+          >
+            <option value="" disabled>
+              선택해 주세요
+            </option>
+            {PROJECT_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
               </option>
-              {PROJECT_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </Field>
+            ))}
+          </select>
+        </Field>
 
-          <Field id="tags" label="태그 (쉼표로 구분)" error={errors.tags}>
-            <input
-              id="tags"
-              name="tags"
-              type="text"
-              defaultValue={project?.tags.join(", ")}
-              className={inputClass}
-              placeholder="예: 게임, 퀴즈, 코딩교육"
-            />
-          </Field>
-        </div>
-      </FormSection>
-
-      <FormSection icon="✏️" title="소개">
-        <Field id="shortDescription" label="짧은 소개" required error={errors.shortDescription}>
+        <Field id="shortDescription" label="한 줄 소개" required error={errors.shortDescription}>
           <textarea
             id="shortDescription"
             name="shortDescription"
@@ -173,6 +212,7 @@ export function ProjectForm({
             aria-invalid={Boolean(errors.shortDescription)}
             aria-describedby={errors.shortDescription ? "shortDescription-error" : undefined}
             className={inputClass}
+            placeholder="예: 오늘의 소비 습관으로 탄소 배출량을 계산해 주는 웹사이트예요."
           />
         </Field>
 
@@ -181,16 +221,85 @@ export function ProjectForm({
             id="fullDescription"
             name="fullDescription"
             required
-            rows={5}
+            rows={4}
             defaultValue={project?.fullDescription}
             aria-invalid={Boolean(errors.fullDescription)}
             aria-describedby={errors.fullDescription ? "fullDescription-error" : undefined}
             className={inputClass}
+            placeholder="어떤 프로젝트인지 2~3문장으로 자유롭게 설명해 주세요."
           />
         </Field>
+
+        <Field
+          id="launchUrl"
+          label="실행 링크"
+          required
+          hint="Replit, Glitch, Netlify, Vercel, v0, bolt.new, lovable.dev 같은 곳에 올린 링크를 붙여넣어 주세요."
+          error={errors.launchUrl}
+        >
+          <input
+            id="launchUrl"
+            name="launchUrl"
+            type="url"
+            required
+            defaultValue={project?.launchUrl}
+            aria-invalid={Boolean(errors.launchUrl)}
+            aria-describedby={errors.launchUrl ? "launchUrl-error" : "launchUrl-hint"}
+            className={inputClass}
+            placeholder="https://..."
+          />
+        </Field>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="handsOnAvailable"
+            name="handsOnAvailable"
+            type="checkbox"
+            defaultChecked={project?.handsOnAvailable ?? true}
+            className="h-5 w-5 rounded border-zinc-300 text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
+          />
+          <label htmlFor="handsOnAvailable" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            지금 바로 체험 가능
+          </label>
+        </div>
       </FormSection>
 
-      <FormSection icon="💡" title="상세 안내 (선택)">
+      <CollapsibleSection icon="➕" title="추가 정보 (선택)" defaultOpen={isEditing}>
+        <Field id="tags" label="태그 (쉼표로 구분)" error={errors.tags}>
+          <input
+            id="tags"
+            name="tags"
+            type="text"
+            defaultValue={project?.tags.join(", ")}
+            className={inputClass}
+            placeholder="예: 게임, 퀴즈, 코딩교육"
+          />
+        </Field>
+
+        <Field id="coverImageUrl" label="대표 이미지 URL" error={errors.coverImageUrl}>
+          <input
+            id="coverImageUrl"
+            name="coverImageUrl"
+            type="url"
+            defaultValue={project?.coverImageUrl}
+            aria-invalid={Boolean(errors.coverImageUrl)}
+            aria-describedby={errors.coverImageUrl ? "coverImageUrl-error" : undefined}
+            className={inputClass}
+            placeholder="https://..."
+          />
+        </Field>
+
+        <Field id="technologies" label="사용한 기술 (쉼표로 구분)" error={errors.technologies}>
+          <input
+            id="technologies"
+            name="technologies"
+            type="text"
+            defaultValue={project?.technologies.join(", ")}
+            className={inputClass}
+            placeholder="예: React, Python, Three.js"
+          />
+        </Field>
+
         <Field id="motivation" label="만들게 된 계기" error={errors.motivation}>
           <textarea
             id="motivation"
@@ -220,60 +329,7 @@ export function ProjectForm({
             className={inputClass}
           />
         </Field>
-      </FormSection>
-
-      <FormSection icon="🔗" title="링크 및 미디어">
-        <Field id="technologies" label="사용한 기술 (쉼표로 구분, 선택)" error={errors.technologies}>
-          <input
-            id="technologies"
-            name="technologies"
-            type="text"
-            defaultValue={project?.technologies.join(", ")}
-            className={inputClass}
-            placeholder="예: React, Python, Three.js"
-          />
-        </Field>
-
-        <Field id="coverImageUrl" label="대표 이미지 URL (선택)" error={errors.coverImageUrl}>
-          <input
-            id="coverImageUrl"
-            name="coverImageUrl"
-            type="url"
-            defaultValue={project?.coverImageUrl}
-            aria-invalid={Boolean(errors.coverImageUrl)}
-            aria-describedby={errors.coverImageUrl ? "coverImageUrl-error" : undefined}
-            className={inputClass}
-            placeholder="https://..."
-          />
-        </Field>
-
-        <Field id="launchUrl" label="실행 링크" required error={errors.launchUrl}>
-          <input
-            id="launchUrl"
-            name="launchUrl"
-            type="url"
-            required
-            defaultValue={project?.launchUrl}
-            aria-invalid={Boolean(errors.launchUrl)}
-            aria-describedby={errors.launchUrl ? "launchUrl-error" : undefined}
-            className={inputClass}
-            placeholder="https://..."
-          />
-        </Field>
-
-        <div className="flex items-center gap-2">
-          <input
-            id="handsOnAvailable"
-            name="handsOnAvailable"
-            type="checkbox"
-            defaultChecked={project?.handsOnAvailable ?? true}
-            className="h-5 w-5 rounded border-zinc-300 text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
-          />
-          <label htmlFor="handsOnAvailable" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-            지금 바로 체험 가능
-          </label>
-        </div>
-      </FormSection>
+      </CollapsibleSection>
 
       {includeStatus && (
         <FormSection icon="🚦" title="전시 상태">

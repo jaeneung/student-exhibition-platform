@@ -44,7 +44,7 @@ export const baseProjectFields = {
   fullDescription: z
     .string()
     .trim()
-    .min(20, "상세 설명은 20자 이상 입력해 주세요.")
+    .min(10, "상세 설명은 10자 이상 입력해 주세요.")
     .max(4000, "상세 설명은 4000자 이내로 입력해 주세요."),
   creatorName: z
     .string()
