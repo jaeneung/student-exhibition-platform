@@ -2,7 +2,6 @@ import { z } from "zod";
 import type { Dictionary } from "./dictionary";
 import { format } from "./dictionary";
 import { EXHIBITION_STATUSES } from "./types";
-import { isValidLaunchUrl } from "./validation";
 
 /** Splits a comma-separated field (tags, technologies) into a trimmed, de-duplicated list. */
 export function parseListField(raw: string): string[] {
@@ -16,20 +15,15 @@ export function parseListField(raw: string): string[] {
 /** Field rules depend on the visitor's locale only for the error message text
  * shown back to them — the shape of the data never changes, so both locales
  * produce a structurally identical schema and the same SubmissionFormValues/
- * ManagementFormValues types regardless of which one built them. */
+ * ManagementFormValues types regardless of which one built them.
+ *
+ * launchUrl and coverImageUrl are deliberately NOT among these fields.
+ * launchUrl's requirement (and what "valid" even means for it) depends on
+ * whether the visitor chose the URL or file-upload launch mode, plus an
+ * async file read; coverImageUrl needs to fall back to an auto-generated
+ * thumbnail when left blank. Both end up depending on which launch mode was
+ * chosen, so both are validated together by resolveLaunchFields instead. */
 function buildBaseProjectFields(v: Dictionary["validation"]) {
-  const urlField = z
-    .string()
-    .trim()
-    .min(1, v.launchUrlRequired)
-    .refine(isValidLaunchUrl, v.urlInvalid);
-
-  const optionalUrlField = z
-    .string()
-    .trim()
-    .optional()
-    .refine((value) => !value || isValidLaunchUrl(value), v.urlInvalid);
-
   const optionalText = (max: number) =>
     z.string().trim().max(max, format(v.textMax, { max })).optional();
 
@@ -40,12 +34,10 @@ function buildBaseProjectFields(v: Dictionary["validation"]) {
     creatorName: z.string().trim().min(1, v.creatorNameMin).max(80, v.creatorNameMax),
     category: z.string().trim().min(1, v.categoryRequired),
     tags: z.string().trim().max(200, v.tagsMax).optional(),
-    coverImageUrl: optionalUrlField,
     motivation: optionalText(2000),
     usageInstructions: optionalText(2000),
     safetyNotes: optionalText(2000),
     technologies: z.string().trim().max(200, v.technologiesMax).optional(),
-    launchUrl: urlField,
     handsOnAvailable: z.boolean().default(true),
   };
 }

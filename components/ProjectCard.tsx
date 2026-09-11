@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Project } from "@/lib/types";
 import { getCategoryStyle } from "@/lib/categoryStyles";
+import { CoverImage } from "./CoverImage";
 import type { Dictionary } from "@/lib/dictionary";
 import { StatusBadge } from "./StatusBadge";
 
@@ -24,11 +25,11 @@ export function ProjectCard({
     >
       <div className="relative aspect-video w-full overflow-hidden">
         {project.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <CoverImage
             src={project.coverImageUrl}
-            alt=""
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            gradient={gradient}
+            icon={icon}
+            className="h-full w-full object-cover text-5xl transition duration-300 group-hover:scale-105"
           />
         ) : (
           <div

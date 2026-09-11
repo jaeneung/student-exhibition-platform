@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { HeroBackgroundImage } from "@/components/HeroBackgroundImage";
 import { LaunchButton } from "@/components/LaunchButton";
 import { QrCode } from "@/components/QrCode";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -49,14 +50,7 @@ export default async function ProjectDetailPage({
   return (
     <div className="flex flex-1 flex-col">
       <div className={`relative overflow-hidden bg-gradient-to-br ${gradient}`}>
-        {project.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={project.coverImageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover opacity-25"
-          />
-        )}
+        {project.coverImageUrl && <HeroBackgroundImage src={project.coverImageUrl} />}
         <div className="relative mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 py-10 sm:px-6 sm:py-14">
           <Link
             href="/"

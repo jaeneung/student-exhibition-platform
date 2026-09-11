@@ -5,10 +5,12 @@ import { getDictionary } from "@/lib/dictionary";
 import {
   managementValuesToProjectFields,
   readProjectFormData,
+  resolveLaunchFields,
   zodIssuesToFieldErrors,
   type FormActionState,
 } from "@/lib/formAction";
 import { getLocale } from "@/lib/i18n";
+import { getRequestOrigin } from "@/lib/origin";
 import { getManagementSchema } from "@/lib/schema";
 import { getProjectByIdForManagement, updateProject } from "@/lib/store";
 import type { ExhibitionStatus, Project, ProjectUpdateInput } from "@/lib/types";
@@ -27,6 +29,7 @@ function toUpdateInput(project: Project): ProjectUpdateInput {
     safetyNotes: project.safetyNotes,
     technologies: project.technologies,
     launchUrl: project.launchUrl,
+    uploadedHtml: project.uploadedHtml,
     status: project.status,
     handsOnAvailable: project.handsOnAvailable,
   };
@@ -51,12 +54,33 @@ export async function updateProjectAction(
   const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
   const parsed = getManagementSchema(dict).safeParse(raw);
+  const existingProject = await getProjectByIdForManagement(id);
 
-  if (!parsed.success) {
-    return { status: "error", errors: zodIssuesToFieldErrors(parsed.error) };
+  const fileEntry = formData.get("launchFile");
+  const launch = await resolveLaunchFields({
+    mode: formData.get("launchMode")?.toString() ?? "url",
+    url: formData.get("launchUrl")?.toString() ?? "",
+    file: fileEntry instanceof File ? fileEntry : null,
+    coverImageUrl: raw.coverImageUrl,
+    id,
+    origin: await getRequestOrigin(),
+    dict,
+    existing: existingProject
+      ? { launchUrl: existingProject.launchUrl, uploadedHtml: existingProject.uploadedHtml }
+      : undefined,
+  });
+
+  if (!parsed.success || !launch.ok) {
+    return {
+      status: "error",
+      errors: {
+        ...(parsed.success ? {} : zodIssuesToFieldErrors(parsed.error)),
+        ...(launch.ok ? {} : launch.errors),
+      },
+    };
   }
 
-  const updated = await updateProject(id, managementValuesToProjectFields(parsed.data));
+  const updated = await updateProject(id, managementValuesToProjectFields(parsed.data, launch.value));
   if (!updated) {
     return { status: "error", formError: dict.validation.editNotFound };
   }

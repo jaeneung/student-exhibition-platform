@@ -6,6 +6,9 @@ const dict = getDictionary("ko");
 const submissionSchema = getSubmissionSchema(dict);
 const managementSchema = getManagementSchema(dict);
 
+// launchUrl/coverImageUrl are deliberately absent here: they depend on the
+// chosen launch mode (URL vs. uploaded file) and are validated separately by
+// resolveLaunchFields (see tests/formAction.test.ts), not by this schema.
 const validSubmission = {
   title: "탄소발자국 계산기",
   shortDescription: "일상 소비 습관으로 하루 탄소 배출량을 계산해요.",
@@ -13,12 +16,10 @@ const validSubmission = {
   creatorName: "환경지킴이 동아리",
   category: "웹사이트",
   tags: "환경, 웹앱",
-  coverImageUrl: "",
   motivation: "",
   usageInstructions: "",
   safetyNotes: "",
   technologies: "HTML, CSS",
-  launchUrl: "https://example.com/exhibits/carbon-tracker",
   handsOnAvailable: true,
 };
 
@@ -42,30 +43,9 @@ describe("submissionSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects an invalid launch URL scheme", () => {
-    const result = submissionSchema.safeParse({
-      ...validSubmission,
-      launchUrl: "javascript:alert(1)",
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      const urlIssue = result.error.issues.find((i) => i.path[0] === "launchUrl");
-      expect(urlIssue).toBeDefined();
-    }
-  });
-
-  it("rejects a missing launch URL", () => {
-    const result = submissionSchema.safeParse({ ...validSubmission, launchUrl: "" });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects an invalid optional cover image URL but allows an empty one", () => {
-    expect(
-      submissionSchema.safeParse({ ...validSubmission, coverImageUrl: "not-a-url" }).success
-    ).toBe(false);
-    expect(submissionSchema.safeParse({ ...validSubmission, coverImageUrl: "" }).success).toBe(
-      true
-    );
+  it("does not accept a launchUrl or coverImageUrl field (resolved separately by mode)", () => {
+    expect(Object.keys(submissionSchema.shape)).not.toContain("launchUrl");
+    expect(Object.keys(submissionSchema.shape)).not.toContain("coverImageUrl");
   });
 
   it("does not accept a status field (submissions are always pending review)", () => {

@@ -142,11 +142,14 @@ function isDuplicateSubmission(
   existing: Project[],
   input: ProjectSubmissionInput
 ): boolean {
+  // Matches on title + creator only, not launchUrl: an uploaded-file
+  // submission gets a fresh /files/{id} address every time (see
+  // resolveLaunchFields), so comparing URLs would never catch an accidental
+  // double-submit of the same file.
   const RECENT_MS = 5 * 60 * 1000;
   const now = Date.now();
   return existing.some(
     (p) =>
-      p.launchUrl === input.launchUrl &&
       p.creatorName === input.creatorName &&
       p.title === input.title &&
       now - new Date(p.createdAt).getTime() < RECENT_MS
@@ -164,8 +167,16 @@ export class DuplicateSubmissionError extends Error {
 
 /** Creates a new submission. Status is always forced to "pending_review" here —
  * the caller cannot set any other status through this function, which is what
- * makes exhibition-status enforcement a server rule rather than a UI convention. */
-export async function createProject(input: ProjectSubmissionInput): Promise<Project> {
+ * makes exhibition-status enforcement a server rule rather than a UI convention.
+ *
+ * Accepts an optional pre-generated `id`: an uploaded-file submission's own
+ * launchUrl is `/files/{id}`, which the caller (app/submit/actions.ts) has to
+ * resolve *before* this function ever runs, so the id has to originate there
+ * rather than inside this function as usual. */
+export async function createProject(
+  input: ProjectSubmissionInput,
+  id: string = randomUUID()
+): Promise<Project> {
   const all = await readAll();
   if (isDuplicateSubmission(all, input)) {
     throw new DuplicateSubmissionError();
@@ -173,7 +184,7 @@ export async function createProject(input: ProjectSubmissionInput): Promise<Proj
   const now = new Date().toISOString();
   const project: Project = {
     ...input,
-    id: randomUUID(),
+    id,
     status: "pending_review",
     createdAt: now,
     updatedAt: now,

@@ -31,6 +31,11 @@ export interface Project {
   safetyNotes?: string;
   technologies: string[];
   launchUrl: string;
+  /** Present only for projects submitted as an uploaded HTML file rather than
+   * a URL — the raw file content, served back out at /files/{id}. `launchUrl`
+   * still holds that same /files/{id} address either way, so callers never
+   * need to branch on this field to know where to send a visitor. */
+  uploadedHtml?: string;
   status: ExhibitionStatus;
   handsOnAvailable: boolean;
   createdAt: string;

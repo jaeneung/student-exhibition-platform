@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { Dictionary } from "@/lib/dictionary";
 import { EXHIBITION_STATUSES, PROJECT_CATEGORIES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
@@ -128,9 +128,12 @@ export function ProjectForm({
   // first view short.
   const isEditing = Boolean(project);
   const f = dict.form;
+  const [launchMode, setLaunchMode] = useState<"url" | "file">(
+    project?.uploadedHtml ? "file" : "url"
+  );
 
   return (
-    <form action={formAction} noValidate className="flex flex-col gap-6">
+    <form action={formAction} encType="multipart/form-data" noValidate className="flex flex-col gap-6">
       {state.status === "error" && state.formError && (
         <div
           role="alert"
@@ -231,19 +234,71 @@ export function ProjectForm({
           />
         </Field>
 
-        <Field id="launchUrl" label={f.launchUrl} required hint={f.launchUrlHint} error={errors.launchUrl}>
-          <input
-            id="launchUrl"
-            name="launchUrl"
-            type="url"
-            required
-            defaultValue={project?.launchUrl}
-            aria-invalid={Boolean(errors.launchUrl)}
-            aria-describedby={errors.launchUrl ? "launchUrl-error" : "launchUrl-hint"}
-            className={inputClass}
-            placeholder={f.launchUrlPlaceholder}
-          />
-        </Field>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            {f.launchMode}
+            <span className="ml-1 text-rose-600" aria-hidden="true">
+              *
+            </span>
+          </span>
+          <div role="radiogroup" aria-label={f.launchMode} className="flex gap-2">
+            {(["url", "file"] as const).map((m) => (
+              <label
+                key={m}
+                className={`flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-medium transition ${
+                  launchMode === m
+                    ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300"
+                    : "border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="launchMode"
+                  value={m}
+                  checked={launchMode === m}
+                  onChange={() => setLaunchMode(m)}
+                  className="sr-only"
+                />
+                {m === "url" ? f.launchModeUrl : f.launchModeFile}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {launchMode === "url" ? (
+          <Field id="launchUrl" label={f.launchUrl} required hint={f.launchUrlHint} error={errors.launchUrl}>
+            <input
+              id="launchUrl"
+              name="launchUrl"
+              type="url"
+              required
+              defaultValue={project?.uploadedHtml ? undefined : project?.launchUrl}
+              aria-invalid={Boolean(errors.launchUrl)}
+              aria-describedby={errors.launchUrl ? "launchUrl-error" : "launchUrl-hint"}
+              className={inputClass}
+              placeholder={f.launchUrlPlaceholder}
+            />
+          </Field>
+        ) : (
+          <Field
+            id="launchFile"
+            label={f.launchFile}
+            required={!project?.uploadedHtml}
+            hint={project?.uploadedHtml ? f.launchFileKeepHint : f.launchFileHint}
+            error={errors.launchFile}
+          >
+            <input
+              id="launchFile"
+              name="launchFile"
+              type="file"
+              required={!project?.uploadedHtml}
+              accept=".html,.htm,text/html"
+              aria-invalid={Boolean(errors.launchFile)}
+              aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
+              className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
+            />
+          </Field>
+        )}
 
         <div className="flex items-center gap-2">
           <input
@@ -271,14 +326,19 @@ export function ProjectForm({
           />
         </Field>
 
-        <Field id="coverImageUrl" label={f.coverImageUrl} error={errors.coverImageUrl}>
+        <Field
+          id="coverImageUrl"
+          label={f.coverImageUrl}
+          hint={f.coverImageUrlHint}
+          error={errors.coverImageUrl}
+        >
           <input
             id="coverImageUrl"
             name="coverImageUrl"
             type="url"
             defaultValue={project?.coverImageUrl}
             aria-invalid={Boolean(errors.coverImageUrl)}
-            aria-describedby={errors.coverImageUrl ? "coverImageUrl-error" : undefined}
+            aria-describedby={errors.coverImageUrl ? "coverImageUrl-error" : "coverImageUrl-hint"}
             className={inputClass}
             placeholder={f.coverImageUrlPlaceholder}
           />

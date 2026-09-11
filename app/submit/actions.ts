@@ -1,14 +1,17 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getDictionary } from "@/lib/dictionary";
 import {
   readProjectFormData,
+  resolveLaunchFields,
   submissionValuesToProjectFields,
   zodIssuesToFieldErrors,
   type FormActionState,
 } from "@/lib/formAction";
 import { getLocale } from "@/lib/i18n";
+import { getRequestOrigin } from "@/lib/origin";
 import { getSubmissionSchema } from "@/lib/schema";
 import { createProject, DuplicateSubmissionError } from "@/lib/store";
 
@@ -20,12 +23,36 @@ export async function submitProjectAction(
   const raw = readProjectFormData(formData);
   const parsed = getSubmissionSchema(dict).safeParse(raw);
 
-  if (!parsed.success) {
-    return { status: "error", errors: zodIssuesToFieldErrors(parsed.error) };
+  // Generated up front (rather than inside createProject, as usual) because
+  // an uploaded file's own launchUrl is /files/{id} — the id has to exist
+  // before the launch fields can be resolved, not after.
+  const id = randomUUID();
+  const fileEntry = formData.get("launchFile");
+  const launch = await resolveLaunchFields({
+    mode: formData.get("launchMode")?.toString() ?? "url",
+    url: formData.get("launchUrl")?.toString() ?? "",
+    file: fileEntry instanceof File ? fileEntry : null,
+    coverImageUrl: raw.coverImageUrl,
+    id,
+    origin: await getRequestOrigin(),
+    dict,
+  });
+
+  if (!parsed.success || !launch.ok) {
+    return {
+      status: "error",
+      errors: {
+        ...(parsed.success ? {} : zodIssuesToFieldErrors(parsed.error)),
+        ...(launch.ok ? {} : launch.errors),
+      },
+    };
   }
 
   try {
-    const project = await createProject(submissionValuesToProjectFields(parsed.data));
+    const project = await createProject(
+      submissionValuesToProjectFields(parsed.data, launch.value),
+      id
+    );
     revalidatePath("/manage");
     return {
       status: "success",

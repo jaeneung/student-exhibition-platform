@@ -60,6 +60,17 @@ describe("createProject", () => {
     });
     expect(second.title).toBe("다른 프로젝트");
   });
+
+  it("uses a caller-supplied id instead of generating one, for uploaded-file submissions whose /files/{id} launchUrl must be known before the record is written", async () => {
+    const { createProject } = await import("@/lib/store");
+    const fixedId = "22222222-2222-2222-2222-222222222222";
+    const project = await createProject(
+      { ...baseSubmission, launchUrl: `https://example.com/files/${fixedId}`, uploadedHtml: "<p>hi</p>" },
+      fixedId
+    );
+    expect(project.id).toBe(fixedId);
+    expect(project.uploadedHtml).toBe("<p>hi</p>");
+  });
 });
 
 describe("getPublicProjectById / getPublicProjects", () => {
