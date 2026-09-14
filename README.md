@@ -26,11 +26,12 @@ app/
   submit/              # 프로젝트 제출 폼 (Server Action)
   manage/              # 전시 상태 관리 화면 (Server Action, 교사 로그인 필요)
   manage/login/        # 교사 로그인 폼 (Server Action)
-  files/[id]/          # 업로드된 HTML 파일을 실행 링크로 그대로 서빙하는 라우트
+  files/[id]/[[...path]]/ # 업로드된 HTML/ZIP 파일을 실행 링크로 그대로 서빙하는 라우트
   gone/                # 비공개/미존재 프로젝트에 대한 진짜 404 응답용 내부 라우트
 lib/
   types.ts, schema.ts, formAction.ts, validation.ts, thumbnail.ts, origin.ts,
-  filters.ts, store.ts, sampleData.ts, runtime.ts, auth.ts, loginThrottle.ts
+  filters.ts, store.ts, sampleData.ts, runtime.ts, auth.ts, loginThrottle.ts,
+  uploadedSite.ts
 components/            # ProjectCard, SearchFilterBar, LaunchButton, QrCode 등
 proxy.ts               # 상세/수정 라우트 접근 전 존재 여부를 먼저 확인해 진짜 404를 반환
 tests/                 # vitest 단위 테스트
@@ -71,10 +72,18 @@ npm run build
 제출/수정 폼의 "실행 방법"에서 둘 중 하나를 고를 수 있습니다.
 
 - **🔗 링크 입력**: Replit, Netlify, Vercel 등에 이미 배포된 프로젝트의 주소를 입력합니다.
-- **📁 파일 업로드**: 완성된 프로젝트를 담은 HTML 파일 하나(.html, 최대 3MB)를 올리면
-  이 앱이 직접 호스팅합니다 — 프로젝트 데이터(`data/projects.json` 또는 Netlify Blobs)
-  안에 파일 내용을 그대로 저장하고, `/files/{프로젝트 id}`로 서빙합니다
-  (`app/files/[id]/route.ts`, `lib/formAction.ts`의 `resolveLaunchFields`).
+- **📁 파일 업로드**: 완성된 프로젝트를 이 앱이 직접 호스팅합니다(최대 3MB).
+  - HTML 파일 하나(.html)로 끝나는 프로젝트라면 그 파일만 올리면 되고,
+    `/files/{프로젝트 id}`로 그대로 서빙됩니다.
+  - 이미지 등 다른 파일도 함께 쓴다면 **폴더 전체를 압축한 ZIP 파일**을 올려야 합니다.
+    HTML 파일 하나만 업로드하면 그 안에서 `<img src="images/4.png">`처럼 상대경로로
+    참조하는 이미지는 학생의 컴퓨터에만 있는 로컬 경로이므로 전시관에서는 절대 보이지
+    않습니다 — 이 문제로 실제로 학생이 만든 웹사이트 사진이 안 보이는 사고가 있었습니다.
+    ZIP을 올리면 안의 모든 파일을 원래 폴더 구조 그대로 저장하고
+    `/files/{프로젝트 id}/{zip 안의 경로}`로 서빙하므로(`lib/uploadedSite.ts`의
+    `extractZipSite`), 상대경로 참조가 그대로 맞아떨어집니다. `index.html`을
+    최우선으로, 없으면 가장 얕은 위치의 `.html` 파일을 실행 페이지로 선택합니다.
+  - (`app/files/[id]/[[...path]]/route.ts`, `lib/formAction.ts`의 `resolveLaunchFields`.)
 
 어느 쪽을 선택하든 대표 이미지를 비워두면 실행 링크를 thum.io로 캡처한 스크린샷을
 자동으로 대표 이미지로 등록합니다(`lib/thumbnail.ts`). thum.io는 처음 요청한 주소에는
@@ -140,8 +149,8 @@ netlify init                 # 현재 폴더를 새 Netlify 사이트와 연결
   갱신이 아님). 학교 전시 부스 수준의 트래픽에는 충분하지만, 다수 교사가 동시에 편집하거나
   트래픽이 커지면 실제 데이터베이스 도입이 필요합니다.
 - **콘텐츠 검수 없음**: 제출된 URL이나 이미지 URL의 안전성은 스킴(http/https)만
-  검증하며, 실제 콘텐츠를 사전 검사하지 않습니다. 업로드된 HTML 파일도 마찬가지로
-  sandbox 없이 그대로 서빙되며, 안전성은 교사의 심사 절차에 의존합니다(위 "실행 링크"
+  검증하며, 실제 콘텐츠를 사전 검사하지 않습니다. 업로드된 파일(HTML 또는 ZIP)도
+  마찬가지로 sandbox 없이 그대로 서빙되며, 안전성은 교사의 심사 절차에 의존합니다(위 "실행 링크"
   참고). 실제 운영 전에는 업로드 파일에 대한 `<iframe sandbox>` 격리나 별도 서브도메인
   분리를 고려해야 합니다.
 - **외부 스크린샷 서비스 의존**: 대표 이미지 자동 생성은 thum.io(무료, 키 없음)에

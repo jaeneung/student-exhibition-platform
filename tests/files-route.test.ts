@@ -28,17 +28,17 @@ const baseSubmission: ProjectSubmissionInput = {
   handsOnAvailable: true,
 };
 
-describe("GET /files/[id]", () => {
+describe("GET /files/[id] (single .html upload)", () => {
   it("serves an uploaded project's HTML content with the right headers", async () => {
     const { createProject } = await import("@/lib/store");
-    const { GET } = await import("@/app/files/[id]/route");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
     const project = await createProject({
       ...baseSubmission,
       uploadedHtml: "<html><body>Hello students</body></html>",
     });
 
     const response = await GET(new Request(`https://example.com/files/${project.id}`), {
-      params: Promise.resolve({ id: project.id }),
+      params: Promise.resolve({ id: project.id, path: undefined }),
     });
 
     expect(response.status).toBe(200);
@@ -49,21 +49,21 @@ describe("GET /files/[id]", () => {
 
   it("returns 404 for a project that has no uploaded file (a URL-mode project)", async () => {
     const { createProject } = await import("@/lib/store");
-    const { GET } = await import("@/app/files/[id]/route");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
     const project = await createProject(baseSubmission);
 
     const response = await GET(new Request(`https://example.com/files/${project.id}`), {
-      params: Promise.resolve({ id: project.id }),
+      params: Promise.resolve({ id: project.id, path: undefined }),
     });
 
     expect(response.status).toBe(404);
   });
 
   it("returns 404 for an unknown id", async () => {
-    const { GET } = await import("@/app/files/[id]/route");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
 
     const response = await GET(new Request("https://example.com/files/does-not-exist"), {
-      params: Promise.resolve({ id: "does-not-exist" }),
+      params: Promise.resolve({ id: "does-not-exist", path: undefined }),
     });
 
     expect(response.status).toBe(404);
@@ -71,7 +71,7 @@ describe("GET /files/[id]", () => {
 
   it("serves an uploaded project regardless of exhibition status (same trust boundary as an external link)", async () => {
     const { createProject } = await import("@/lib/store");
-    const { GET } = await import("@/app/files/[id]/route");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
     // createProject always starts a submission as pending_review, which is
     // exactly the status a freshly uploaded file sits in before a teacher
     // reviews it — this checks the file is still reachable at that point.
@@ -81,9 +81,81 @@ describe("GET /files/[id]", () => {
     });
 
     const response = await GET(new Request(`https://example.com/files/${project.id}`), {
-      params: Promise.resolve({ id: project.id }),
+      params: Promise.resolve({ id: project.id, path: undefined }),
     });
 
     expect(response.status).toBe(200);
+  });
+
+  it("ignores a stray path segment for a legacy single-file upload", async () => {
+    const { createProject } = await import("@/lib/store");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
+    const project = await createProject({
+      ...baseSubmission,
+      uploadedHtml: "<p>hi</p>",
+    });
+
+    const response = await GET(new Request(`https://example.com/files/${project.id}/images/4.png`), {
+      params: Promise.resolve({ id: project.id, path: ["images", "4.png"] }),
+    });
+
+    expect(response.status).toBe(404);
+  });
+});
+
+describe("GET /files/[id]/[...path] (.zip upload)", () => {
+  it("serves the entry page at /files/{id} and an asset at its own nested path", async () => {
+    const { createProject } = await import("@/lib/store");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
+    const project = await createProject({
+      ...baseSubmission,
+      entryPath: "index.html",
+      uploadedFiles: {
+        "index.html": {
+          contentBase64: Buffer.from("<img src='images/4.png'>").toString("base64"),
+          contentType: "text/html; charset=utf-8",
+        },
+        "images/4.png": {
+          contentBase64: Buffer.from("fake-png-bytes").toString("base64"),
+          contentType: "image/png",
+        },
+      },
+    });
+
+    const entryResponse = await GET(new Request(`https://example.com/files/${project.id}`), {
+      params: Promise.resolve({ id: project.id, path: undefined }),
+    });
+    expect(entryResponse.status).toBe(200);
+    expect(entryResponse.headers.get("content-type")).toContain("text/html");
+    expect(await entryResponse.text()).toBe("<img src='images/4.png'>");
+
+    const assetResponse = await GET(
+      new Request(`https://example.com/files/${project.id}/images/4.png`),
+      { params: Promise.resolve({ id: project.id, path: ["images", "4.png"] }) }
+    );
+    expect(assetResponse.status).toBe(200);
+    expect(assetResponse.headers.get("content-type")).toBe("image/png");
+    expect(Buffer.from(await assetResponse.arrayBuffer()).toString()).toBe("fake-png-bytes");
+  });
+
+  it("returns 404 for a path not present in the uploaded files", async () => {
+    const { createProject } = await import("@/lib/store");
+    const { GET } = await import("@/app/files/[id]/[[...path]]/route");
+    const project = await createProject({
+      ...baseSubmission,
+      entryPath: "index.html",
+      uploadedFiles: {
+        "index.html": {
+          contentBase64: Buffer.from("<html></html>").toString("base64"),
+          contentType: "text/html; charset=utf-8",
+        },
+      },
+    });
+
+    const response = await GET(
+      new Request(`https://example.com/files/${project.id}/missing.png`),
+      { params: Promise.resolve({ id: project.id, path: ["missing.png"] }) }
+    );
+    expect(response.status).toBe(404);
   });
 });

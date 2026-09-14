@@ -111,8 +111,9 @@ const ko = {
     launchUrl: "실행 링크",
     launchUrlHint: "Replit, Glitch, Netlify, Vercel, v0, bolt.new, lovable.dev 같은 곳에 올린 링크를 붙여넣어 주세요.",
     launchUrlPlaceholder: "https://...",
-    launchFile: "HTML 파일 업로드",
-    launchFileHint: "완성된 프로젝트의 HTML 파일(.html)을 올려주세요. 최대 3MB까지 가능해요.",
+    launchFile: "HTML 또는 ZIP 파일 업로드",
+    launchFileHint:
+      "HTML 파일 하나로 끝나는 프로젝트라면 그 파일(.html)을, 이미지 등 다른 파일도 함께 쓴다면 폴더 전체를 압축한 ZIP 파일(.zip)을 올려주세요. 사진이 로컬 경로를 가리키고 있으면 전시관에서는 보이지 않으니 꼭 ZIP으로 올려주세요. 최대 3MB까지 가능해요.",
     launchFileKeepHint: "이미 업로드된 파일이 있어요. 새 파일을 선택하면 기존 파일을 대체해요. 그대로 두려면 비워두세요.",
     handsOnAvailable: "지금 바로 체험 가능",
     tags: "태그 (쉼표로 구분)",
@@ -162,6 +163,8 @@ const ko = {
     step1Body1:
       "가장 중요한 건 '직접 눌러볼 수 있는 인터넷 주소(링크)'가 있어야 한다는 거예요. 내 컴퓨터에만 있는 파일이나, 로그인해야만 볼 수 있는 화면은 안 돼요 — 방문자가 아무 기기에서나 바로 열어볼 수 있어야 해요.",
     step1Body2: "AI/바이브 코딩 도구로 만들었다면, 아래에서 내가 쓴 도구를 눌러 링크 받는 방법을 확인하세요.",
+    step1Body3:
+      "링크를 만들기 어렵다면 제출 화면에서 파일을 직접 업로드할 수도 있어요. 단, HTML 파일 하나에 이미지 등 다른 파일을 함께 쓰고 있다면 그 파일만 올리지 말고, 폴더 전체를 압축한 ZIP 파일로 올려주세요 — HTML 파일 하나만 올리면 그 안의 사진이 내 컴퓨터 경로를 가리키고 있어서 전시관에서는 보이지 않아요.",
     step1Note: "💡 링크는 반드시 http:// 또는 https://로 시작해야 제출할 수 있어요.",
     tools: [
       {
@@ -250,7 +253,10 @@ const ko = {
     urlInvalid: "http:// 또는 https:// 로 시작하는 유효한 링크를 입력해 주세요.",
     launchFileRequired: "업로드할 파일을 선택해 주세요.",
     launchFileTooLarge: "파일 크기는 3MB 이하여야 해요.",
-    launchFileInvalidType: "HTML 파일(.html)만 업로드할 수 있어요.",
+    launchFileInvalidType: "HTML 파일(.html) 또는 ZIP 파일(.zip)만 업로드할 수 있어요.",
+    launchFileZipInvalid: "ZIP 파일을 열 수 없어요. 파일이 손상되지 않았는지 확인해 주세요.",
+    launchFileZipEmpty: "ZIP 파일 안에 내용이 없어요.",
+    launchFileZipNoHtml: "ZIP 파일 안에 HTML 파일이 없어요.",
     duplicateSubmission: "이미 같은 내용으로 최근에 제출된 프로젝트가 있습니다.",
     submitSuccess: "프로젝트가 제출되었습니다! 선생님이 검토한 뒤 '전시중' 상태로 바뀌면 방문자에게 공개됩니다.",
     submitGenericError: "제출 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
@@ -372,8 +378,9 @@ const en: Dictionary = {
     launchUrl: "Launch Link",
     launchUrlHint: "Paste a link from somewhere you've deployed it, like Replit, Glitch, Netlify, Vercel, v0, bolt.new, or lovable.dev.",
     launchUrlPlaceholder: "https://...",
-    launchFile: "Upload an HTML File",
-    launchFileHint: "Upload your project's HTML file (.html). Up to 3MB.",
+    launchFile: "Upload an HTML or ZIP File",
+    launchFileHint:
+      "If your project is just one HTML file, upload that (.html). If it uses other files too, like images, zip up the whole folder and upload the .zip instead — if a picture points to a path on your own computer, it won't show up in the gallery. Up to 3MB.",
     launchFileKeepHint: "A file is already uploaded. Choosing a new one replaces it — leave this blank to keep the current file.",
     handsOnAvailable: "Available to try right now",
     tags: "Tags (comma-separated)",
@@ -424,6 +431,8 @@ const en: Dictionary = {
     step1Body1:
       "The most important thing is having a link that anyone can click and open directly. A file that only exists on your computer, or a screen that requires logging in, won't work — visitors need to be able to open it instantly on any device.",
     step1Body2: "If you built it with an AI or vibe-coding tool, find the tool you used below for steps on getting a link.",
+    step1Body3:
+      "If getting a link is hard, you can upload your file directly on the submission page instead. If your HTML file uses other files too, like images, don't upload just that one file — zip up the whole folder and upload the .zip instead. If you upload only the HTML file, any pictures in it point to a path on your own computer and won't show up in the gallery.",
     step1Note: "💡 Your link must start with http:// or https:// to be submitted.",
     tools: [
       {
@@ -513,7 +522,10 @@ const en: Dictionary = {
     urlInvalid: "Please enter a valid link starting with http:// or https://.",
     launchFileRequired: "Please choose a file to upload.",
     launchFileTooLarge: "File size must be 3MB or smaller.",
-    launchFileInvalidType: "Only HTML files (.html) can be uploaded.",
+    launchFileInvalidType: "Only HTML (.html) or ZIP (.zip) files can be uploaded.",
+    launchFileZipInvalid: "Couldn't open the ZIP file — please check it isn't corrupted.",
+    launchFileZipEmpty: "The ZIP file doesn't contain anything.",
+    launchFileZipNoHtml: "The ZIP file doesn't contain an HTML file.",
     duplicateSubmission: "A project with the same details was already submitted recently.",
     submitSuccess:
       "Your project has been submitted! Once a teacher reviews it and switches it to 'On Display', visitors will be able to see it.",

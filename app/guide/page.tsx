@@ -82,6 +82,8 @@ export default async function GuidePage() {
           ))}
         </div>
 
+        <p>{g.step1Body3}</p>
+
         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{g.step1Note}</p>
       </StepCard>
 

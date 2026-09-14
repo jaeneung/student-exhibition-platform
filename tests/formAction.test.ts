@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import { getDictionary } from "@/lib/dictionary";
 import { resolveLaunchFields } from "@/lib/formAction";
@@ -8,6 +9,15 @@ const origin = "https://kis-exhibition.example";
 
 function htmlFile(content: string, name = "project.html", type = "text/html") {
   return new File([content], name, { type });
+}
+
+async function zipFile(entries: Record<string, string>, name = "project.zip"): Promise<File> {
+  const zip = new JSZip();
+  for (const [path, content] of Object.entries(entries)) {
+    zip.file(path, content);
+  }
+  const buffer = await zip.generateAsync({ type: "arraybuffer" });
+  return new File([buffer], name, { type: "application/zip" });
 }
 
 describe("resolveLaunchFields — URL mode", () => {
@@ -198,6 +208,131 @@ describe("resolveLaunchFields — file mode", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.value.uploadedHtml).toBe("<p>new</p>");
+    }
+  });
+});
+
+describe("resolveLaunchFields — file mode, .zip upload", () => {
+  it("extracts every file and launches at the entry page's own nested path", async () => {
+    const file = await zipFile({
+      "index.html": "<img src='images/4.png'>",
+      "images/4.png": "fake-image-bytes",
+    });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}/index.html`);
+      expect(result.value.entryPath).toBe("index.html");
+      expect(result.value.uploadedFiles?.["index.html"].contentType).toContain("text/html");
+      expect(result.value.uploadedFiles?.["images/4.png"].contentType).toBe("image/png");
+      expect(
+        Buffer.from(result.value.uploadedFiles?.["images/4.png"].contentBase64 ?? "", "base64").toString()
+      ).toBe("fake-image-bytes");
+      // The auto-thumbnail must point at the exact same launch URL.
+      expect(result.value.coverImageUrl).toContain(result.value.launchUrl);
+    }
+  });
+
+  it("prefers a top-level index.html over a nested .html file", async () => {
+    const file = await zipFile({
+      "index.html": "<p>root</p>",
+      "pages/about.html": "<p>about</p>",
+    });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.entryPath).toBe("index.html");
+    }
+  });
+
+  it("picks the shallowest .html file when there's no index.html", async () => {
+    const file = await zipFile({
+      "pages/deep/nested.html": "<p>deep</p>",
+      "main.html": "<p>main</p>",
+    });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.entryPath).toBe("main.html");
+    }
+  });
+
+  it("rejects a zip with no HTML file inside", async () => {
+    const file = await zipFile({ "readme.txt": "no html here" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.launchFile).toBeDefined();
+  });
+
+  it("rejects a corrupted/non-zip file with a .zip name", async () => {
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file: new File(["not actually a zip"], "project.zip", { type: "application/zip" }),
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.launchFile).toBeDefined();
+  });
+
+  it("keeps the existing zip upload when editing without choosing a new file", async () => {
+    const existingFiles = {
+      "index.html": { contentBase64: Buffer.from("<p>old</p>").toString("base64"), contentType: "text/html" },
+    };
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file: null,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+      existing: {
+        launchUrl: `${origin}/files/${id}/index.html`,
+        uploadedFiles: existingFiles,
+        entryPath: "index.html",
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.uploadedFiles).toBe(existingFiles);
+      expect(result.value.entryPath).toBe("index.html");
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}/index.html`);
     }
   });
 });

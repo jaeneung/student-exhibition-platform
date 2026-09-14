@@ -128,9 +128,8 @@ export function ProjectForm({
   // first view short.
   const isEditing = Boolean(project);
   const f = dict.form;
-  const [launchMode, setLaunchMode] = useState<"url" | "file">(
-    project?.uploadedHtml ? "file" : "url"
-  );
+  const hasExistingUpload = Boolean(project?.uploadedHtml || project?.uploadedFiles);
+  const [launchMode, setLaunchMode] = useState<"url" | "file">(hasExistingUpload ? "file" : "url");
 
   return (
     <form action={formAction} encType="multipart/form-data" noValidate className="flex flex-col gap-6">
@@ -290,7 +289,7 @@ export function ProjectForm({
               name="launchUrl"
               type="url"
               required
-              defaultValue={project?.uploadedHtml ? undefined : project?.launchUrl}
+              defaultValue={hasExistingUpload ? undefined : project?.launchUrl}
               aria-invalid={Boolean(errors.launchUrl)}
               aria-describedby={errors.launchUrl ? "launchUrl-error" : "launchUrl-hint"}
               className={inputClass}
@@ -301,16 +300,16 @@ export function ProjectForm({
           <Field
             id="launchFile"
             label={f.launchFile}
-            required={!project?.uploadedHtml}
-            hint={project?.uploadedHtml ? f.launchFileKeepHint : f.launchFileHint}
+            required={!hasExistingUpload}
+            hint={hasExistingUpload ? f.launchFileKeepHint : f.launchFileHint}
             error={errors.launchFile}
           >
             <input
               id="launchFile"
               name="launchFile"
               type="file"
-              required={!project?.uploadedHtml}
-              accept=".html,.htm,text/html"
+              required={!hasExistingUpload}
+              accept=".html,.htm,.zip,text/html,application/zip,application/x-zip-compressed"
               aria-invalid={Boolean(errors.launchFile)}
               aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
               className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}

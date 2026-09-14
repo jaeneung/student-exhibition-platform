@@ -39,6 +39,15 @@ export interface ProjectTranslation {
   technologies?: string[];
 }
 
+/** One file inside a `.zip` upload, content-addressed by its path within the
+ * zip (see lib/uploadedSite.ts). Stored as base64 so binary assets (images,
+ * fonts) round-trip safely through the same JSON-based project store as
+ * everything else. */
+export interface UploadedFile {
+  contentBase64: string;
+  contentType: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -58,11 +67,20 @@ export interface Project {
   safetyNotes?: string;
   technologies: string[];
   launchUrl: string;
-  /** Present only for projects submitted as an uploaded HTML file rather than
-   * a URL — the raw file content, served back out at /files/{id}. `launchUrl`
-   * still holds that same /files/{id} address either way, so callers never
-   * need to branch on this field to know where to send a visitor. */
+  /** Present only for a project submitted as a single uploaded HTML file
+   * (no accompanying assets) rather than a URL — the raw file content,
+   * served back out at exactly /files/{id}. Kept for projects submitted
+   * before .zip uploads existed; a plain .html upload still takes this path
+   * today when the student's page needs no other files. */
   uploadedHtml?: string;
+  /** Present only for a project submitted as a `.zip` upload — every file
+   * inside it, keyed by its path within the zip (e.g. "index.html",
+   * "images/4.png"), so a page's own relative asset references resolve
+   * correctly when served back out at that same path under /files/{id}/.
+   * `entryPath` says which file is the main page; launchUrl always points
+   * at /files/{id}/{entryPath} for these. */
+  uploadedFiles?: Record<string, UploadedFile>;
+  entryPath?: string;
   status: ExhibitionStatus;
   handsOnAvailable: boolean;
   createdAt: string;

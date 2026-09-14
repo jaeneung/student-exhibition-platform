@@ -40,6 +40,8 @@ function toUpdateInput(project: Project): ProjectUpdateInput {
     technologies: project.technologies,
     launchUrl: project.launchUrl,
     uploadedHtml: project.uploadedHtml,
+    uploadedFiles: project.uploadedFiles,
+    entryPath: project.entryPath,
     status: project.status,
     handsOnAvailable: project.handsOnAvailable,
   };
@@ -78,7 +80,12 @@ export async function updateProjectAction(
     origin: await getRequestOrigin(),
     dict,
     existing: existingProject
-      ? { launchUrl: existingProject.launchUrl, uploadedHtml: existingProject.uploadedHtml }
+      ? {
+          launchUrl: existingProject.launchUrl,
+          uploadedHtml: existingProject.uploadedHtml,
+          uploadedFiles: existingProject.uploadedFiles,
+          entryPath: existingProject.entryPath,
+        }
       : undefined,
   });
 

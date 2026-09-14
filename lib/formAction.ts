@@ -7,7 +7,9 @@ import type {
   ProjectGrade,
   ProjectSubmissionInput,
   ProjectUpdateInput,
+  UploadedFile,
 } from "./types";
+import { extractZipSite } from "./uploadedSite";
 import { isValidLaunchUrl } from "./validation";
 
 export type FormFieldErrors = Record<string, string>;
@@ -57,16 +59,43 @@ const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
 export interface ResolvedLaunch {
   launchUrl: string;
   uploadedHtml?: string;
+  uploadedFiles?: Record<string, UploadedFile>;
+  entryPath?: string;
   coverImageUrl?: string;
+}
+
+/** Editing only: the project's current launch fields. Browsers can't
+ * pre-fill a <input type="file"> with an existing upload, so re-submitting
+ * the edit form with file mode still selected but no new file chosen means
+ * "keep what's already there," not "no file was provided." */
+interface ExistingLaunch {
+  launchUrl: string;
+  uploadedHtml?: string;
+  uploadedFiles?: Record<string, UploadedFile>;
+  entryPath?: string;
+}
+
+function looksLikeZip(file: File): boolean {
+  return (
+    file.type === "application/zip" ||
+    file.type === "application/x-zip-compressed" ||
+    /\.zip$/i.test(file.name)
+  );
+}
+
+function looksLikeHtml(file: File): boolean {
+  return file.type === "text/html" || /\.html?$/i.test(file.name);
 }
 
 /**
  * Validates and resolves the "how do visitors launch this" side of the form —
- * either a plain URL, or an uploaded HTML file that this app hosts itself at
- * /files/{id} (see app/files/[id]/route.ts). Kept out of the zod schema in
- * schema.ts because it's genuinely conditional (which field even applies
- * depends on `mode`) and involves an async file read, not just sync field
- * rules.
+ * either a plain URL, or an uploaded file that this app hosts itself at
+ * /files/{id} (see app/files/[id]/[[...path]]/route.ts): a single .html file
+ * with no other assets, or a .zip when the project needs images/CSS/JS
+ * alongside its HTML (see lib/uploadedSite.ts for why a lone .html file
+ * can't support those). Kept out of the zod schema in schema.ts because it's
+ * genuinely conditional (which field even applies depends on `mode`) and
+ * involves async file reads, not just sync field rules.
  *
  * Also fills in coverImageUrl automatically from the resolved launch URL via
  * a screenshot service when the visitor left it blank, regardless of mode —
@@ -90,20 +119,22 @@ export async function resolveLaunchFields({
   id: string;
   origin: string;
   dict: Dictionary;
-  /** Editing only: the project's current launch fields. Browsers can't
-   * pre-fill a <input type="file"> with an existing upload, so re-submitting
-   * the edit form with file mode still selected but no new file chosen means
-   * "keep what's already there," not "no file was provided." */
-  existing?: { launchUrl: string; uploadedHtml?: string };
+  existing?: ExistingLaunch;
 }): Promise<{ ok: true; value: ResolvedLaunch } | { ok: false; errors: FormFieldErrors }> {
-  let launchUrl: string;
-  let uploadedHtml: string | undefined;
-
   if (mode === "file") {
-    if ((!file || file.size === 0) && existing?.uploadedHtml) {
+    if ((!file || file.size === 0) && (existing?.uploadedHtml || existing?.uploadedFiles)) {
       // Re-submitting the edit form without picking a new file: keep what's
       // already there rather than treating this as "no file provided."
-      return finalizeLaunch(existing.launchUrl, existing.uploadedHtml, coverImageUrl, dict);
+      return finalizeLaunch(
+        {
+          launchUrl: existing.launchUrl,
+          uploadedHtml: existing.uploadedHtml,
+          uploadedFiles: existing.uploadedFiles,
+          entryPath: existing.entryPath,
+        },
+        coverImageUrl,
+        dict
+      );
     }
     if (!file || file.size === 0) {
       return { ok: false, errors: { launchFile: dict.validation.launchFileRequired } };
@@ -111,29 +142,51 @@ export async function resolveLaunchFields({
     if (file.size > MAX_UPLOAD_BYTES) {
       return { ok: false, errors: { launchFile: dict.validation.launchFileTooLarge } };
     }
-    const looksLikeHtml = file.type === "text/html" || /\.html?$/i.test(file.name);
-    if (!looksLikeHtml) {
+
+    if (looksLikeZip(file)) {
+      const extracted = await extractZipSite(await file.arrayBuffer());
+      if (!extracted.ok) {
+        const message =
+          extracted.reason === "no-html"
+            ? dict.validation.launchFileZipNoHtml
+            : extracted.reason === "empty"
+              ? dict.validation.launchFileZipEmpty
+              : dict.validation.launchFileZipInvalid;
+        return { ok: false, errors: { launchFile: message } };
+      }
+      return finalizeLaunch(
+        {
+          launchUrl: `${origin}/files/${id}/${extracted.value.entryPath}`,
+          uploadedFiles: extracted.value.files,
+          entryPath: extracted.value.entryPath,
+        },
+        coverImageUrl,
+        dict
+      );
+    }
+
+    if (!looksLikeHtml(file)) {
       return { ok: false, errors: { launchFile: dict.validation.launchFileInvalidType } };
     }
-    uploadedHtml = await file.text();
-    launchUrl = `${origin}/files/${id}`;
-  } else {
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) {
-      return { ok: false, errors: { launchUrl: dict.validation.launchUrlRequired } };
-    }
-    if (!isValidLaunchUrl(trimmedUrl)) {
-      return { ok: false, errors: { launchUrl: dict.validation.urlInvalid } };
-    }
-    launchUrl = trimmedUrl;
+    return finalizeLaunch(
+      { launchUrl: `${origin}/files/${id}`, uploadedHtml: await file.text() },
+      coverImageUrl,
+      dict
+    );
   }
 
-  return finalizeLaunch(launchUrl, uploadedHtml, coverImageUrl, dict);
+  const trimmedUrl = url.trim();
+  if (!trimmedUrl) {
+    return { ok: false, errors: { launchUrl: dict.validation.launchUrlRequired } };
+  }
+  if (!isValidLaunchUrl(trimmedUrl)) {
+    return { ok: false, errors: { launchUrl: dict.validation.urlInvalid } };
+  }
+  return finalizeLaunch({ launchUrl: trimmedUrl }, coverImageUrl, dict);
 }
 
 function finalizeLaunch(
-  launchUrl: string,
-  uploadedHtml: string | undefined,
+  launch: Pick<ResolvedLaunch, "launchUrl" | "uploadedHtml" | "uploadedFiles" | "entryPath">,
   coverImageUrl: string,
   dict: Dictionary
 ): { ok: true; value: ResolvedLaunch } | { ok: false; errors: FormFieldErrors } {
@@ -145,9 +198,8 @@ function finalizeLaunch(
   return {
     ok: true,
     value: {
-      launchUrl,
-      uploadedHtml,
-      coverImageUrl: trimmedCover || buildAutoThumbnailUrl(launchUrl),
+      ...launch,
+      coverImageUrl: trimmedCover || buildAutoThumbnailUrl(launch.launchUrl),
     },
   };
 }
@@ -171,6 +223,8 @@ export function submissionValuesToProjectFields(
     technologies: parseListField(values.technologies ?? ""),
     launchUrl: resolved.launchUrl,
     uploadedHtml: resolved.uploadedHtml,
+    uploadedFiles: resolved.uploadedFiles,
+    entryPath: resolved.entryPath,
     handsOnAvailable: values.handsOnAvailable,
   };
 }
