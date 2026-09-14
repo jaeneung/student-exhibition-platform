@@ -147,11 +147,11 @@ describe("resolveLaunchFields — file mode", () => {
     if (!result.ok) expect(result.errors.launchFile).toBeDefined();
   });
 
-  it("rejects a non-HTML file", async () => {
+  it("rejects a file type that isn't HTML, ZIP, image, or PDF", async () => {
     const result = await resolveLaunchFields({
       mode: "file",
       url: "",
-      file: htmlFile("not html", "photo.png", "image/png"),
+      file: htmlFile("not html", "notes.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
       coverImageUrl: "",
       id,
       origin,
@@ -334,5 +334,98 @@ describe("resolveLaunchFields — file mode, .zip upload", () => {
       expect(result.value.entryPath).toBe("index.html");
       expect(result.value.launchUrl).toBe(`${origin}/files/${id}/index.html`);
     }
+  });
+});
+
+describe("resolveLaunchFields — file mode, single image/PDF upload", () => {
+  it("accepts a PNG image and launches at the bare /files/{id} address", async () => {
+    const file = new File(["fake-png-bytes"], "poster.png", { type: "image/png" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}`);
+      expect(result.value.entryPath).toBe("poster.png");
+      expect(result.value.uploadedFiles?.["poster.png"].contentType).toBe("image/png");
+      // The image itself is the cover — no thum.io screenshot of a picture.
+      expect(result.value.coverImageUrl).toBe(`${origin}/files/${id}`);
+    }
+  });
+
+  it("recognizes an image by extension even with a generic MIME type", async () => {
+    const file = new File(["fake-jpeg-bytes"], "photo.jpg", { type: "application/octet-stream" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.uploadedFiles?.["photo.jpg"].contentType).toBe("image/jpeg");
+    }
+  });
+
+  it("accepts a PDF and does not override an explicit cover image", async () => {
+    const file = new File(["%PDF-fake"], "report.pdf", { type: "application/pdf" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "https://example.com/custom-cover.png",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}`);
+      expect(result.value.entryPath).toBe("report.pdf");
+      expect(result.value.uploadedFiles?.["report.pdf"].contentType).toBe("application/pdf");
+      expect(result.value.coverImageUrl).toBe("https://example.com/custom-cover.png");
+    }
+  });
+
+  it("falls back to a thum.io screenshot for a PDF with no explicit cover image", async () => {
+    const file = new File(["%PDF-fake"], "report.pdf", { type: "application/pdf" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.coverImageUrl).toContain(result.value.launchUrl);
+      expect(result.value.coverImageUrl).not.toBe(result.value.launchUrl);
+    }
+  });
+
+  it("rejects an SVG upload (script-capable, same as HTML)", async () => {
+    const file = new File(["<svg></svg>"], "icon.svg", { type: "image/svg+xml" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.launchFile).toBeDefined();
   });
 });

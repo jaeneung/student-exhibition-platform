@@ -9,7 +9,7 @@ import type {
   ProjectUpdateInput,
   UploadedFile,
 } from "./types";
-import { extractZipSite } from "./uploadedSite";
+import { contentTypeForPath, extractZipSite } from "./uploadedSite";
 import { isValidLaunchUrl } from "./validation";
 
 export type FormFieldErrors = Record<string, string>;
@@ -87,20 +87,40 @@ function looksLikeHtml(file: File): boolean {
   return file.type === "text/html" || /\.html?$/i.test(file.name);
 }
 
+// SVG is deliberately excluded here: it can embed <script> the same way HTML
+// can, so treating it as "just an image" would quietly open the same
+// no-sandbox risk documented for HTML/zip uploads (see README) under a form
+// field that looks harmless. It's still uploadable inside a .zip like any
+// other asset, unrestricted, same as before this feature existed.
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp"];
+
+function looksLikeImage(file: File): boolean {
+  if (file.type.startsWith("image/")) return file.type !== "image/svg+xml";
+  return IMAGE_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(`.${ext}`));
+}
+
+function looksLikePdf(file: File): boolean {
+  return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+}
+
 /**
  * Validates and resolves the "how do visitors launch this" side of the form —
  * either a plain URL, or an uploaded file that this app hosts itself at
  * /files/{id} (see app/files/[id]/[[...path]]/route.ts): a single .html file
- * with no other assets, or a .zip when the project needs images/CSS/JS
+ * with no other assets, a .zip when the project needs images/CSS/JS
  * alongside its HTML (see lib/uploadedSite.ts for why a lone .html file
- * can't support those). Kept out of the zod schema in schema.ts because it's
- * genuinely conditional (which field even applies depends on `mode`) and
- * involves async file reads, not just sync field rules.
+ * can't support those), or a single image/PDF file for a project that's just
+ * a poster, infographic, or document rather than an interactive page. Kept
+ * out of the zod schema in schema.ts because it's genuinely conditional
+ * (which field even applies depends on `mode`) and involves async file
+ * reads, not just sync field rules.
  *
- * Also fills in coverImageUrl automatically from the resolved launch URL via
- * a screenshot service when the visitor left it blank, regardless of mode —
- * this is the "썸네일 화면을 알아서 등록" behavior, applied in one place so
- * both submission and edit get it identically.
+ * Also fills in coverImageUrl automatically when the visitor left it blank,
+ * regardless of mode — from the resolved launch URL via a screenshot service
+ * for a page, or from the image itself when the upload already is one (no
+ * need to screenshot a picture to get a picture). This is the "썸네일 화면을
+ * 알아서 등록" behavior, applied in one place so both submission and edit
+ * get it identically.
  */
 export async function resolveLaunchFields({
   mode,
@@ -163,6 +183,28 @@ export async function resolveLaunchFields({
         coverImageUrl,
         dict
       );
+    }
+
+    if (looksLikeImage(file) || looksLikePdf(file)) {
+      const launchUrl = `${origin}/files/${id}`;
+      const contentBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
+      const result = finalizeLaunch(
+        {
+          launchUrl,
+          uploadedFiles: {
+            [file.name]: { contentBase64, contentType: contentTypeForPath(file.name) },
+          },
+          entryPath: file.name,
+        },
+        coverImageUrl,
+        dict
+      );
+      // An uploaded image already is the picture to show — use it directly
+      // instead of asking thum.io to screenshot a page that's just an <img>.
+      if (result.ok && looksLikeImage(file) && !coverImageUrl.trim()) {
+        result.value.coverImageUrl = launchUrl;
+      }
+      return result;
     }
 
     if (!looksLikeHtml(file)) {

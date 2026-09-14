@@ -16,6 +16,7 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   svg: "image/svg+xml",
   webp: "image/webp",
   ico: "image/x-icon",
+  pdf: "application/pdf",
   woff: "font/woff",
   woff2: "font/woff2",
   ttf: "font/ttf",
