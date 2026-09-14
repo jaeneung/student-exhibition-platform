@@ -22,6 +22,7 @@ function toUpdateInput(project: Project): ProjectUpdateInput {
     fullDescription: project.fullDescription,
     creatorName: project.creatorName,
     category: project.category,
+    grade: project.grade,
     tags: project.tags,
     coverImageUrl: project.coverImageUrl,
     motivation: project.motivation,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterPublicProjects, getCategoryFacets, getTagFacets } from "@/lib/filters";
+import { filterPublicProjects, getCategoryFacets, getGradeFacets, getTagFacets } from "@/lib/filters";
 import type { Project } from "@/lib/types";
 
 function makeProject(overrides: Partial<Project>): Project {
@@ -85,17 +85,49 @@ describe("filterPublicProjects", () => {
   it("returns an empty array when there are no projects at all (empty state)", () => {
     expect(filterPublicProjects([])).toEqual([]);
   });
+
+  it("filters by grade, and leaves gradeless projects out of a grade-filtered result", () => {
+    const projects = [
+      makeProject({ id: "1", grade: "G6" }),
+      makeProject({ id: "2", grade: "G7" }),
+      makeProject({ id: "3" }), // no grade set
+    ];
+
+    expect(filterPublicProjects(projects, { grade: "G6" }).map((p) => p.id)).toEqual(["1"]);
+  });
+
+  it("does not filter by grade when no grade filter is given", () => {
+    const projects = [makeProject({ id: "1", grade: "G6" }), makeProject({ id: "2" })];
+
+    expect(filterPublicProjects(projects).map((p) => p.id)).toEqual(["1", "2"]);
+  });
 });
 
-describe("getCategoryFacets / getTagFacets", () => {
+describe("getCategoryFacets / getTagFacets / getGradeFacets", () => {
   it("only derive facets from on_display projects", () => {
     const projects = [
-      makeProject({ id: "1", status: "on_display", category: "게임", tags: ["퍼즐"] }),
-      makeProject({ id: "2", status: "pending_review", category: "앱", tags: ["숨김"] }),
-      makeProject({ id: "3", status: "private", category: "AI 챗봇", tags: ["숨김2"] }),
+      makeProject({ id: "1", status: "on_display", category: "게임", tags: ["퍼즐"], grade: "G6" }),
+      makeProject({ id: "2", status: "pending_review", category: "앱", tags: ["숨김"], grade: "G7" }),
+      makeProject({ id: "3", status: "private", category: "AI 챗봇", tags: ["숨김2"], grade: "G8" }),
     ];
 
     expect(getCategoryFacets(projects)).toEqual(["게임"]);
     expect(getTagFacets(projects)).toEqual(["퍼즐"]);
+    expect(getGradeFacets(projects)).toEqual(["G6"]);
+  });
+
+  it("orders grade facets G6→G9 regardless of insertion order", () => {
+    const projects = [
+      makeProject({ id: "1", grade: "G9" }),
+      makeProject({ id: "2", grade: "G6" }),
+      makeProject({ id: "3", grade: "G8" }),
+    ];
+
+    expect(getGradeFacets(projects)).toEqual(["G6", "G8", "G9"]);
+  });
+
+  it("returns no grade facets when nothing on display has a grade set", () => {
+    const projects = [makeProject({ id: "1" })];
+    expect(getGradeFacets(projects)).toEqual([]);
   });
 });

@@ -63,6 +63,11 @@ export default async function ProjectDetailPage({
               <span aria-hidden="true">{icon}</span>
               {categoryLabel}
             </span>
+            {project.grade && (
+              <span className="inline-flex items-center rounded-full bg-white/20 px-3 py-1 text-sm font-semibold text-white backdrop-blur-sm">
+                {project.grade}
+              </span>
+            )}
             <StatusBadge status={project.status} label={dict.status[project.status]} />
           </div>
           <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-4xl">

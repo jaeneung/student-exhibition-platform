@@ -17,6 +17,10 @@ export const PROJECT_CATEGORIES = [
 
 export type ProjectCategory = (typeof PROJECT_CATEGORIES)[number];
 
+export const PROJECT_GRADES = ["G6", "G7", "G8", "G9"] as const;
+
+export type ProjectGrade = (typeof PROJECT_GRADES)[number];
+
 export interface Project {
   id: string;
   title: string;
@@ -24,6 +28,11 @@ export interface Project {
   fullDescription: string;
   creatorName: string;
   category: string;
+  /** Which grade level's project this is (G6–G9). Optional: existing
+   * projects predate this field, and not every exhibit needs to be tied to
+   * a specific grade — the gallery's grade filter simply omits any project
+   * that doesn't set one. */
+  grade?: ProjectGrade;
   tags: string[];
   coverImageUrl?: string;
   motivation?: string;
@@ -56,4 +65,5 @@ export interface PublicProjectFilters {
   q?: string;
   category?: string;
   tag?: string;
+  grade?: string;
 }

@@ -3,7 +3,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ProjectCard } from "@/components/ProjectCard";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { format, getDictionary } from "@/lib/dictionary";
-import { getCategoryFacets, getOnDisplayProjects, getTagFacets } from "@/lib/filters";
+import { getCategoryFacets, getGradeFacets, getOnDisplayProjects, getTagFacets } from "@/lib/filters";
 import { getLocale } from "@/lib/i18n";
 import { getAllProjects, getPublicProjects } from "@/lib/store";
 
@@ -21,17 +21,19 @@ export default async function GalleryPage({
   const q = firstValue(params.q);
   const category = firstValue(params.category);
   const tag = firstValue(params.tag);
+  const grade = firstValue(params.grade);
 
   const [projects, allProjects] = await Promise.all([
-    getPublicProjects({ q, category, tag }),
+    getPublicProjects({ q, category, tag, grade }),
     getAllProjects(),
   ]);
 
   const categories = getCategoryFacets(allProjects);
   const tags = getTagFacets(allProjects);
+  const grades = getGradeFacets(allProjects);
   const onDisplayCount = getOnDisplayProjects(allProjects).length;
   const hasAnyOnDisplay = onDisplayCount > 0;
-  const hasActiveFilters = Boolean(q || category || tag);
+  const hasActiveFilters = Boolean(q || category || tag || grade);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -51,7 +53,16 @@ export default async function GalleryPage({
       </section>
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-        <SearchFilterBar dict={dict} q={q} category={category} tag={tag} categories={categories} tags={tags} />
+        <SearchFilterBar
+          dict={dict}
+          q={q}
+          category={category}
+          tag={tag}
+          grade={grade}
+          categories={categories}
+          tags={tags}
+          grades={grades}
+        />
 
         {!hasAnyOnDisplay ? (
           <EmptyState icon="🖼️" title={dict.gallery.emptyTitle} message={dict.gallery.emptyMessage} />

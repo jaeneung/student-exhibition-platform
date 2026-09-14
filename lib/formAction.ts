@@ -2,7 +2,12 @@ import { z } from "zod";
 import type { Dictionary } from "./dictionary";
 import { parseListField, type ManagementFormValues, type SubmissionFormValues } from "./schema";
 import { buildAutoThumbnailUrl } from "./thumbnail";
-import type { ExhibitionStatus, ProjectSubmissionInput, ProjectUpdateInput } from "./types";
+import type {
+  ExhibitionStatus,
+  ProjectGrade,
+  ProjectSubmissionInput,
+  ProjectUpdateInput,
+} from "./types";
 import { isValidLaunchUrl } from "./validation";
 
 export type FormFieldErrors = Record<string, string>;
@@ -24,6 +29,7 @@ export function readProjectFormData(formData: FormData) {
     fullDescription: formData.get("fullDescription")?.toString() ?? "",
     creatorName: formData.get("creatorName")?.toString() ?? "",
     category: formData.get("category")?.toString() ?? "",
+    grade: formData.get("grade")?.toString() ?? "",
     tags: formData.get("tags")?.toString() ?? "",
     coverImageUrl: formData.get("coverImageUrl")?.toString() ?? "",
     motivation: formData.get("motivation")?.toString() ?? "",
@@ -156,6 +162,7 @@ export function submissionValuesToProjectFields(
     fullDescription: values.fullDescription,
     creatorName: values.creatorName,
     category: values.category,
+    grade: (values.grade || undefined) as ProjectGrade | undefined,
     tags: parseListField(values.tags ?? ""),
     coverImageUrl: resolved.coverImageUrl,
     motivation: values.motivation || undefined,

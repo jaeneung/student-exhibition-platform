@@ -51,6 +51,13 @@ describe("submissionSchema", () => {
   it("does not accept a status field (submissions are always pending review)", () => {
     expect(Object.keys(submissionSchema.shape)).not.toContain("status");
   });
+
+  it("accepts a valid grade or an absent one, but rejects an invalid grade value", () => {
+    expect(submissionSchema.safeParse({ ...validSubmission, grade: "G6" }).success).toBe(true);
+    expect(submissionSchema.safeParse(validSubmission).success).toBe(true);
+    expect(submissionSchema.safeParse({ ...validSubmission, grade: "" }).success).toBe(true);
+    expect(submissionSchema.safeParse({ ...validSubmission, grade: "G12" }).success).toBe(false);
+  });
 });
 
 describe("managementSchema", () => {

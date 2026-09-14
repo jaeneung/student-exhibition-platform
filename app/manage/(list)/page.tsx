@@ -76,7 +76,8 @@ export default async function ManagePage() {
                             )}
                           </div>
                           <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                            {dict.categories[project.category] ?? project.category} · {project.creatorName}
+                            {dict.categories[project.category] ?? project.category}
+                            {project.grade ? ` · ${project.grade}` : ""} · {project.creatorName}
                           </span>
                         </div>
                       </div>

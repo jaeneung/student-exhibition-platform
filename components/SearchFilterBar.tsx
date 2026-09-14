@@ -6,17 +6,21 @@ export function SearchFilterBar({
   q,
   category,
   tag,
+  grade,
   categories,
   tags,
+  grades,
 }: {
   dict: Dictionary;
   q?: string;
   category?: string;
   tag?: string;
+  grade?: string;
   categories: string[];
   tags: string[];
+  grades: string[];
 }) {
-  const hasActiveFilters = Boolean(q || category || tag);
+  const hasActiveFilters = Boolean(q || category || tag || grade);
 
   return (
     <form
@@ -87,6 +91,27 @@ export function SearchFilterBar({
           ))}
         </select>
       </div>
+
+      {grades.length > 0 && (
+        <div className="flex min-w-[120px] flex-col gap-1.5">
+          <label htmlFor="grade" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            {dict.search.grade}
+          </label>
+          <select
+            id="grade"
+            name="grade"
+            defaultValue={grade ?? ""}
+            className="h-11 rounded-xl border border-zinc-300 bg-white px-3 text-base transition focus-visible:border-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:bg-zinc-950"
+          >
+            <option value="">{dict.search.all}</option>
+            {grades.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <button

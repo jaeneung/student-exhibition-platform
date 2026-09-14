@@ -39,10 +39,17 @@ export function ProjectCard({
             {icon}
           </div>
         )}
-        <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2.5">
-          <span className="rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
-            {categoryLabel}
-          </span>
+        <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-1.5 p-2.5">
+          <div className="flex flex-wrap gap-1.5">
+            <span className="rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+              {categoryLabel}
+            </span>
+            {project.grade && (
+              <span className="rounded-full bg-brand-600/85 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+                {project.grade}
+              </span>
+            )}
+          </div>
           {showStatus && <StatusBadge status={project.status} label={dict.status[project.status]} />}
         </div>
         {!project.handsOnAvailable && (

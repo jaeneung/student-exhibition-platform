@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import type { Dictionary } from "@/lib/dictionary";
-import { EXHIBITION_STATUSES, PROJECT_CATEGORIES } from "@/lib/types";
+import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, PROJECT_GRADES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
 import type { FormActionState } from "@/lib/formAction";
 
@@ -200,6 +200,24 @@ export function ProjectForm({
             {PROJECT_CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {dict.categories[c] ?? c}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        <Field id="grade" label={f.grade} error={errors.grade}>
+          <select
+            id="grade"
+            name="grade"
+            defaultValue={project?.grade ?? ""}
+            aria-invalid={Boolean(errors.grade)}
+            aria-describedby={errors.grade ? "grade-error" : undefined}
+            className={inputClass}
+          >
+            <option value="">{f.gradePlaceholder}</option>
+            {PROJECT_GRADES.map((g) => (
+              <option key={g} value={g}>
+                {g}
               </option>
             ))}
           </select>
