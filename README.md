@@ -72,7 +72,7 @@ npm run build
 제출/수정 폼의 "실행 방법"에서 둘 중 하나를 고를 수 있습니다.
 
 - **🔗 링크 입력**: Replit, Netlify, Vercel 등에 이미 배포된 프로젝트의 주소를 입력합니다.
-- **📁 파일 업로드**: 완성된 프로젝트를 이 앱이 직접 호스팅합니다(최대 10MB).
+- **📁 파일 업로드**: 완성된 프로젝트를 이 앱이 직접 호스팅합니다(최대 4MB).
   - HTML 파일 하나(.html)로 끝나는 프로젝트라면 그 파일만 올리면 되고,
     `/files/{프로젝트 id}`로 그대로 서빙됩니다.
   - 이미지 등 다른 파일도 함께 쓴다면 **폴더 전체를 압축한 ZIP 파일**을 올려야 합니다.
@@ -91,6 +91,18 @@ npm run build
     ZIP 안에 넣어 올리는 경우와 달리 "이미지 첨부"처럼 보이는 입력창 뒤에 그 위험을
     숨기고 싶지 않기 때문입니다.
   - (`app/files/[id]/[[...path]]/route.ts`, `lib/formAction.ts`의 `resolveLaunchFields`.)
+
+**4MB 이상으로 올리지 마세요 — 앱 설정이 아니라 Netlify 자체의 한계입니다.**
+Server Action 요청 본문은 Next.js 기본값이 1MB라 `next.config.ts`의
+`serverActions.bodySizeLimit`을 올려야 하지만, 그와 별개로 Netlify의 함수/CDN
+계층이 raw 요청 본문을 약 4.5MB에서 하드하게 잘라버립니다(base64 인코딩 시
+6MB로 맞아떨어지는, AWS Lambda/API Gateway 동기 호출의 전형적인 한계) — 이
+값은 next.config.ts를 아무리 올려도 바뀌지 않으며, 우리 코드가 실행되기도 전에
+413으로 거부됩니다. 실제로 배포된 사이트에 4.45MB는 성공, 4.5MB는 413으로
+직접 확인했습니다. 이 이상 진짜로 올리려면 Server Action을 거치지 않고 브라우저가
+스토리지에 직접 업로드하는 방식(서명된 업로드 URL 등)으로 아키텍처를 바꿔야
+합니다 — `MAX_UPLOAD_BYTES`(`lib/formAction.ts`)와 `bodySizeLimit`
+(`next.config.ts`)에 이 내용이 자세히 적혀 있습니다.
 
 어느 쪽을 선택하든 대표 이미지를 비워두면 실행 링크를 thum.io로 캡처한 스크린샷을
 자동으로 대표 이미지로 등록합니다(`lib/thumbnail.ts`). thum.io는 처음 요청한 주소에는
