@@ -21,9 +21,10 @@ const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "priva
 export const dynamic = "force-dynamic";
 
 export default async function ManagePage() {
-  // The reliable enforcement point: proxy.ts also checks this, but it's
-  // stripped from the actual Netlify build (see proxy.ts's comment), so this
-  // in-page check is what actually protects the deployed site.
+  // Defense in depth: the layout above this page already redirects
+  // unauthenticated visitors (see layout.tsx's comment for why the check has
+  // to live there, not just here, on this specific route). Kept here too in
+  // case this page is ever reached another way.
   if (!(await hasValidTeacherSession())) {
     redirect("/manage/login");
   }
