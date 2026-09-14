@@ -69,6 +69,11 @@ const ko = {
     alt: "{title} 실행 링크로 연결되는 QR 코드",
     caption: "휴대폰 카메라로 스캔하면 같은 실행 링크로 이동해요",
   },
+  mobileAccess: {
+    title: "📱 휴대폰으로 보기",
+    qrAlt: "전시관 홈페이지로 연결되는 QR 코드",
+    description: "QR 코드를 스캔하면 압축 파일을 열거나 따로 설치할 필요 없이, 지금 이 화면을 휴대폰 브라우저에서 바로 볼 수 있어요.",
+  },
   notFound: {
     title: "프로젝트를 찾을 수 없어요",
     message: "요청하신 프로젝트가 없거나 현재 전시중이 아니에요.",
@@ -335,6 +340,11 @@ const en: Dictionary = {
   qr: {
     alt: "QR code linking to {title}'s launch URL",
     caption: "Scan with your phone camera to open the same launch link",
+  },
+  mobileAccess: {
+    title: "📱 View on Your Phone",
+    qrAlt: "QR code linking to the exhibition gallery homepage",
+    description: "Scan the QR code to open this page directly in your phone's browser — no zip files to open, nothing to install.",
   },
   notFound: {
     title: "Project not found",

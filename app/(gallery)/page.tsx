@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { ProjectCard } from "@/components/ProjectCard";
+import { QrCode } from "@/components/QrCode";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { format, getDictionary } from "@/lib/dictionary";
 import {
@@ -11,6 +12,7 @@ import {
   getTagFacets,
 } from "@/lib/filters";
 import { getLocale } from "@/lib/i18n";
+import { getRequestOrigin } from "@/lib/origin";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getAllProjects } from "@/lib/store";
 
@@ -45,21 +47,29 @@ export default async function GalleryPage({
   const onDisplayCount = getOnDisplayProjects(allProjects).length;
   const hasAnyOnDisplay = onDisplayCount > 0;
   const hasActiveFilters = Boolean(q || category || tag || grade);
+  const homeUrl = `${await getRequestOrigin()}/`;
 
   return (
     <div className="flex flex-1 flex-col">
       <section className="hero-grid border-b border-zinc-200 bg-gradient-to-b from-brand-50 to-transparent dark:border-zinc-800 dark:from-brand-950/40">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-12 sm:px-6 sm:py-16">
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm ring-1 ring-brand-100 dark:bg-zinc-900 dark:text-brand-300 dark:ring-brand-900">
-            {dict.gallery.badge}
-          </span>
-          <h1 className="max-w-2xl text-3xl font-extrabold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
-            {dict.gallery.title}
-          </h1>
-          <p className="max-w-xl text-base text-zinc-600 dark:text-zinc-400">{dict.gallery.subtitle}</p>
-          <p className="text-sm font-medium text-brand-700 dark:text-brand-300">
-            {format(dict.gallery.countLabel, { count: onDisplayCount })}
-          </p>
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-12 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-16">
+          <div className="flex max-w-2xl flex-col gap-4">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-brand-700 shadow-sm ring-1 ring-brand-100 dark:bg-zinc-900 dark:text-brand-300 dark:ring-brand-900">
+              {dict.gallery.badge}
+            </span>
+            <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 sm:text-4xl dark:text-zinc-50">
+              {dict.gallery.title}
+            </h1>
+            <p className="text-base text-zinc-600 dark:text-zinc-400">{dict.gallery.subtitle}</p>
+            <p className="text-sm font-medium text-brand-700 dark:text-brand-300">
+              {format(dict.gallery.countLabel, { count: onDisplayCount })}
+            </p>
+          </div>
+
+          <div className="flex w-full max-w-[240px] shrink-0 flex-col items-center gap-2 self-center rounded-2xl border border-zinc-200 bg-white/80 p-4 text-center shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/80 sm:self-auto">
+            <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{dict.mobileAccess.title}</p>
+            <QrCode url={homeUrl} altText={dict.mobileAccess.qrAlt} caption={dict.mobileAccess.description} />
+          </div>
         </div>
       </section>
 
