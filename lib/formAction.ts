@@ -54,7 +54,7 @@ export function zodIssuesToFieldErrors(error: z.ZodError): FormFieldErrors {
   return errors;
 }
 
-const MAX_UPLOAD_BYTES = 3 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export interface ResolvedLaunch {
   launchUrl: string;

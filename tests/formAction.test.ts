@@ -162,7 +162,7 @@ describe("resolveLaunchFields — file mode", () => {
   });
 
   it("rejects a file over the size limit", async () => {
-    const bigContent = "a".repeat(3 * 1024 * 1024 + 1);
+    const bigContent = "a".repeat(10 * 1024 * 1024 + 1);
     const result = await resolveLaunchFields({
       mode: "file",
       url: "",
