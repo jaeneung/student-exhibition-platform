@@ -25,6 +25,8 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   wav: "audio/wav",
   mp4: "video/mp4",
   webm: "video/webm",
+  mov: "video/quicktime",
+  ogv: "video/ogg",
   txt: "text/plain; charset=utf-8",
   xml: "application/xml; charset=utf-8",
 };

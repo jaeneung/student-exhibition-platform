@@ -107,15 +107,22 @@ function looksLikePdf(file: File): boolean {
   return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
 }
 
+const VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "ogv"];
+
+function looksLikeVideo(file: File): boolean {
+  if (file.type.startsWith("video/")) return true;
+  return VIDEO_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(`.${ext}`));
+}
+
 /**
  * Validates and resolves the "how do visitors launch this" side of the form —
  * either a plain URL, or an uploaded file that this app hosts itself at
  * /files/{id} (see app/files/[id]/[[...path]]/route.ts): a single .html file
  * with no other assets, a .zip when the project needs images/CSS/JS
  * alongside its HTML (see lib/uploadedSite.ts for why a lone .html file
- * can't support those), or a single image/PDF file for a project that's just
- * a poster, infographic, or document rather than an interactive page. Kept
- * out of the zod schema in schema.ts because it's genuinely conditional
+ * can't support those), or a single image/video/PDF file for a project
+ * that's just a poster, video, or document rather than an interactive page.
+ * Kept out of the zod schema in schema.ts because it's genuinely conditional
  * (which field even applies depends on `mode`) and involves async file
  * reads, not just sync field rules.
  *
@@ -125,6 +132,11 @@ function looksLikePdf(file: File): boolean {
  * need to screenshot a picture to get a picture). This is the "썸네일 화면을
  * 알아서 등록" behavior, applied in one place so both submission and edit
  * get it identically.
+ *
+ * A real video is almost always well over the 4MB cap (see
+ * MAX_UPLOAD_BYTES) — this mainly helps a short clip, GIF-length demo, or a
+ * project whose video is otherwise small. Anything bigger should still go
+ * through the URL mode, hosted somewhere actually built for video.
  */
 export async function resolveLaunchFields({
   mode,
@@ -189,7 +201,7 @@ export async function resolveLaunchFields({
       );
     }
 
-    if (looksLikeImage(file) || looksLikePdf(file)) {
+    if (looksLikeImage(file) || looksLikePdf(file) || looksLikeVideo(file)) {
       const launchUrl = `${origin}/files/${id}`;
       const contentBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
       const result = finalizeLaunch(

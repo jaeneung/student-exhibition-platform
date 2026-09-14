@@ -337,7 +337,7 @@ describe("resolveLaunchFields — file mode, .zip upload", () => {
   });
 });
 
-describe("resolveLaunchFields — file mode, single image/PDF upload", () => {
+describe("resolveLaunchFields — file mode, single image/video/PDF upload", () => {
   it("accepts a PNG image and launches at the bare /files/{id} address", async () => {
     const file = new File(["fake-png-bytes"], "poster.png", { type: "image/png" });
     const result = await resolveLaunchFields({
@@ -427,5 +427,62 @@ describe("resolveLaunchFields — file mode, single image/PDF upload", () => {
     });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.launchFile).toBeDefined();
+  });
+
+  it("accepts an MP4 video and launches at the bare /files/{id} address", async () => {
+    const file = new File(["fake-mp4-bytes"], "demo.mp4", { type: "video/mp4" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}`);
+      expect(result.value.entryPath).toBe("demo.mp4");
+      expect(result.value.uploadedFiles?.["demo.mp4"].contentType).toBe("video/mp4");
+      // Unlike an image, a video isn't its own cover — falls back to thum.io.
+      expect(result.value.coverImageUrl).toContain(result.value.launchUrl);
+      expect(result.value.coverImageUrl).not.toBe(result.value.launchUrl);
+    }
+  });
+
+  it("recognizes a video by extension even with a generic MIME type", async () => {
+    const file = new File(["fake-webm-bytes"], "clip.webm", { type: "application/octet-stream" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.uploadedFiles?.["clip.webm"].contentType).toBe("video/webm");
+    }
+  });
+
+  it("recognizes a .mov video and does not override an explicit cover image", async () => {
+    const file = new File(["fake-mov-bytes"], "recording.mov", { type: "video/quicktime" });
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file,
+      coverImageUrl: "https://example.com/custom-cover.png",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.uploadedFiles?.["recording.mov"].contentType).toBe("video/quicktime");
+      expect(result.value.coverImageUrl).toBe("https://example.com/custom-cover.png");
+    }
   });
 });

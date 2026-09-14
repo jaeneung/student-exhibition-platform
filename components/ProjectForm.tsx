@@ -309,7 +309,7 @@ export function ProjectForm({
               name="launchFile"
               type="file"
               required={!hasExistingUpload}
-              accept=".html,.htm,.zip,.png,.jpg,.jpeg,.gif,.webp,.pdf,text/html,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/gif,image/webp,application/pdf"
+              accept=".html,.htm,.zip,.png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.webm,.mov,text/html,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/gif,image/webp,application/pdf,video/mp4,video/webm,video/quicktime"
               aria-invalid={Boolean(errors.launchFile)}
               aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
               className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
