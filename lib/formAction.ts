@@ -9,7 +9,7 @@ import type {
   ProjectUpdateInput,
   UploadedFile,
 } from "./types";
-import { contentTypeForPath, extractZipSite } from "./uploadedSite";
+import { buildSiteFromEntries, contentTypeForPath, extractZipSite } from "./uploadedSite";
 import { isValidLaunchUrl } from "./validation";
 
 export type FormFieldErrors = Record<string, string>;
@@ -41,6 +41,21 @@ export function readProjectFormData(formData: FormData) {
     handsOnAvailable: formData.get("handsOnAvailable") === "on",
     status: formData.get("status")?.toString() ?? "",
   };
+}
+
+/** Folder mode sends each selected file's relative path as a JSON array in
+ * a companion text field (see ProjectForm.tsx's onChange handler) since a
+ * File object's own `webkitRelativePath` never survives a multipart
+ * submission. Malformed/tampered input just yields no paths — resolveLaunchFields
+ * already falls back to each file's bare name when a path is missing. */
+export function parseFolderPaths(value: FormDataEntryValue | null): string[] {
+  if (typeof value !== "string") return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((p): p is string => typeof p === "string") : [];
+  } catch {
+    return [];
+  }
 }
 
 export function zodIssuesToFieldErrors(error: z.ZodError): FormFieldErrors {
@@ -118,13 +133,13 @@ function looksLikeVideo(file: File): boolean {
  * Validates and resolves the "how do visitors launch this" side of the form —
  * either a plain URL, or an uploaded file that this app hosts itself at
  * /files/{id} (see app/files/[id]/[[...path]]/route.ts): a single .html file
- * with no other assets, a .zip when the project needs images/CSS/JS
- * alongside its HTML (see lib/uploadedSite.ts for why a lone .html file
- * can't support those), or a single image/video/PDF file for a project
- * that's just a poster, video, or document rather than an interactive page.
- * Kept out of the zod schema in schema.ts because it's genuinely conditional
- * (which field even applies depends on `mode`) and involves async file
- * reads, not just sync field rules.
+ * with no other assets, a .zip or a browser-picked folder when the project
+ * needs images/CSS/JS alongside its HTML (see lib/uploadedSite.ts for why a
+ * lone .html file can't support those), or a single image/video/PDF file
+ * for a project that's just a poster, video, or document rather than an
+ * interactive page. Kept out of the zod schema in schema.ts because it's
+ * genuinely conditional (which field even applies depends on `mode`) and
+ * involves async file reads, not just sync field rules.
  *
  * Also fills in coverImageUrl automatically when the visitor left it blank,
  * regardless of mode — from the resolved launch URL via a screenshot service
@@ -142,6 +157,8 @@ export async function resolveLaunchFields({
   mode,
   url,
   file,
+  folderFiles,
+  folderPaths,
   coverImageUrl,
   id,
   origin,
@@ -151,12 +168,69 @@ export async function resolveLaunchFields({
   mode: string;
   url: string;
   file: File | null;
+  /** Folder-mode only: every file the browser's folder picker selected,
+   * paired index-for-index with `folderPaths` (see ProjectForm.tsx's
+   * onChange handler, which reads each File's own `webkitRelativePath`
+   * client-side — that property never survives a multipart submission on
+   * its own, so it has to be sent alongside the files as plain strings). */
+  folderFiles?: File[];
+  folderPaths?: string[];
   coverImageUrl: string;
   id: string;
   origin: string;
   dict: Dictionary;
   existing?: ExistingLaunch;
 }): Promise<{ ok: true; value: ResolvedLaunch } | { ok: false; errors: FormFieldErrors }> {
+  if (mode === "folder") {
+    const files = folderFiles ?? [];
+    if (files.length === 0 && (existing?.uploadedHtml || existing?.uploadedFiles)) {
+      // Re-submitting the edit form without picking a new folder: keep
+      // what's already there rather than treating this as "nothing chosen."
+      return finalizeLaunch(
+        {
+          launchUrl: existing.launchUrl,
+          uploadedHtml: existing.uploadedHtml,
+          uploadedFiles: existing.uploadedFiles,
+          entryPath: existing.entryPath,
+        },
+        coverImageUrl,
+        dict
+      );
+    }
+    if (files.length === 0) {
+      return { ok: false, errors: { launchFile: dict.validation.launchFileRequired } };
+    }
+    const totalBytes = files.reduce((sum, f) => sum + f.size, 0);
+    if (totalBytes > MAX_UPLOAD_BYTES) {
+      return { ok: false, errors: { launchFile: dict.validation.launchFileTooLarge } };
+    }
+
+    const paths = folderPaths ?? [];
+    const entries = await Promise.all(
+      files.map(async (f, i) => ({
+        // Falls back to the bare filename if paths are missing/short —
+        // defensive only; the client always sends one path per file.
+        path: paths[i] || f.name,
+        contentBase64: Buffer.from(await f.arrayBuffer()).toString("base64"),
+      }))
+    );
+    const built = buildSiteFromEntries(entries);
+    if (!built.ok) {
+      const message =
+        built.reason === "no-html" ? dict.validation.launchFileZipNoHtml : dict.validation.launchFileZipEmpty;
+      return { ok: false, errors: { launchFile: message } };
+    }
+    return finalizeLaunch(
+      {
+        launchUrl: `${origin}/files/${id}/${built.value.entryPath}`,
+        uploadedFiles: built.value.files,
+        entryPath: built.value.entryPath,
+      },
+      coverImageUrl,
+      dict
+    );
+  }
+
   if (mode === "file") {
     if ((!file || file.size === 0) && (existing?.uploadedHtml || existing?.uploadedFiles)) {
       // Re-submitting the edit form without picking a new file: keep what's

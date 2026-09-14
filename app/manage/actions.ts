@@ -7,6 +7,7 @@ import { SESSION_COOKIE_NAME, requireTeacherSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/dictionary";
 import {
   managementValuesToProjectFields,
+  parseFolderPaths,
   readProjectFormData,
   resolveLaunchFields,
   zodIssuesToFieldErrors,
@@ -75,6 +76,8 @@ export async function updateProjectAction(
     mode: formData.get("launchMode")?.toString() ?? "url",
     url: formData.get("launchUrl")?.toString() ?? "",
     file: fileEntry instanceof File ? fileEntry : null,
+    folderFiles: formData.getAll("launchFolderFiles").filter((v): v is File => v instanceof File),
+    folderPaths: parseFolderPaths(formData.get("launchFolderPaths")),
     coverImageUrl: raw.coverImageUrl,
     id,
     origin: await getRequestOrigin(),

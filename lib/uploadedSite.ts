@@ -41,51 +41,63 @@ export interface ExtractedSite {
   entryPath: string;
 }
 
-export type ExtractZipResult =
+export type BuildSiteResult =
   | { ok: true; value: ExtractedSite }
-  | { ok: false; reason: "invalid" | "empty" | "no-html" };
+  | { ok: false; reason: "empty" | "no-html" };
+
+export type ExtractZipResult = BuildSiteResult | { ok: false; reason: "invalid" };
+
+/** True for files that are never real page content and would otherwise
+ * interfere with picking the right entry page: macOS Finder's "Compress"
+ * command adds a __MACOSX/ metadata folder and a "._name" resource-fork
+ * twin next to every real file, and OS file browsers leave their own
+ * junk (Thumbs.db, desktop.ini, .DS_Store) inside folders they touch. */
+function isJunkPath(path: string): boolean {
+  const base = path.split("/").pop() ?? "";
+  return (
+    path.startsWith("__MACOSX/") ||
+    base.startsWith("._") ||
+    base === ".DS_Store" ||
+    base === "Thumbs.db" ||
+    base === "desktop.ini"
+  );
+}
+
+/** Prefers an index.html, then the shallowest match, then alphabetical — a
+ * stable, predictable pick when there's more than one .html file. */
+function pickEntryPath(htmlPaths: string[]): string {
+  const sorted = [...htmlPaths].sort((a, b) => {
+    const aIsIndex = /(^|\/)index\.html?$/i.test(a);
+    const bIsIndex = /(^|\/)index\.html?$/i.test(b);
+    if (aIsIndex !== bIsIndex) return aIsIndex ? -1 : 1;
+    const depthDiff = a.split("/").length - b.split("/").length;
+    if (depthDiff !== 0) return depthDiff;
+    return a.localeCompare(b);
+  });
+  return sorted[0];
+}
 
 /**
- * Extracts a `.zip` upload into a flat map of path -> file content, and picks
- * an entry HTML page to launch. Every folder inside the zip is preserved
- * exactly as-is: a student's page referencing "images/4.png" or
- * "../images/4.png" only resolves correctly once served back out at that
- * same relative path, which is the whole point of accepting a zip instead of
- * a lone .html file (a single uploaded file has nowhere for those relative
- * references to point to — see app/files/[id]/[[...path]]/route.ts).
- *
- * macOS's Finder "Compress" command adds a __MACOSX/ metadata folder and a
- * "._name" resource-fork twin next to every real file; both are dropped
- * since they're never page content and would otherwise interfere with
- * picking the right entry page.
+ * Builds the {files, entryPath} shape shared by every "here's a whole site,
+ * not just one file" upload path (a .zip's contents, or a browser folder
+ * picker's file list) from a flat list of already-read {path, contentBase64}
+ * entries. Every folder is preserved exactly as given: a student's page
+ * referencing "images/4.png" or "../images/4.png" only resolves correctly
+ * once served back out at that same relative path (see
+ * app/files/[id]/[[...path]]/route.ts).
  */
-export async function extractZipSite(buffer: ArrayBuffer): Promise<ExtractZipResult> {
-  let zip: JSZip;
-  try {
-    zip = await JSZip.loadAsync(buffer);
-  } catch {
-    return { ok: false, reason: "invalid" };
-  }
-
-  const entries = Object.values(zip.files)
-    .map((entry) => ({ entry, path: entry.name.replace(/\\/g, "/") }))
-    .filter(
-      // Windows' own Compress-Archive cmdlet stores entries with backslash
-      // separators instead of the ZIP-spec forward slash, so paths are
-      // normalized above before anything checks or stores them.
-      ({ entry, path }) =>
-        !entry.dir && !path.startsWith("__MACOSX/") && !(path.split("/").pop() ?? "").startsWith("._")
-    );
-
-  if (entries.length === 0) {
+export function buildSiteFromEntries(
+  entries: { path: string; contentBase64: string }[]
+): BuildSiteResult {
+  const filtered = entries.filter((e) => !isJunkPath(e.path));
+  if (filtered.length === 0) {
     return { ok: false, reason: "empty" };
   }
 
   const files: Record<string, UploadedFile> = {};
   const htmlPaths: string[] = [];
 
-  for (const { entry, path } of entries) {
-    const contentBase64 = await entry.async("base64");
+  for (const { path, contentBase64 } of filtered) {
     files[path] = { contentBase64, contentType: contentTypeForPath(path) };
     if (/\.html?$/i.test(path)) {
       htmlPaths.push(path);
@@ -96,16 +108,36 @@ export async function extractZipSite(buffer: ArrayBuffer): Promise<ExtractZipRes
     return { ok: false, reason: "no-html" };
   }
 
-  // Prefer an index.html, then the shallowest match, then alphabetical — a
-  // stable, predictable pick when a zip has more than one .html file.
-  htmlPaths.sort((a, b) => {
-    const aIsIndex = /(^|\/)index\.html?$/i.test(a);
-    const bIsIndex = /(^|\/)index\.html?$/i.test(b);
-    if (aIsIndex !== bIsIndex) return aIsIndex ? -1 : 1;
-    const depthDiff = a.split("/").length - b.split("/").length;
-    if (depthDiff !== 0) return depthDiff;
-    return a.localeCompare(b);
-  });
+  return { ok: true, value: { files, entryPath: pickEntryPath(htmlPaths) } };
+}
 
-  return { ok: true, value: { files, entryPath: htmlPaths[0] } };
+/**
+ * Extracts a `.zip` upload into the same {files, entryPath} shape (see
+ * buildSiteFromEntries) — accepting a .zip instead of a lone .html file is
+ * what lets a page's own relative image/CSS/JS references resolve
+ * correctly at all, since a single uploaded file has nowhere for those
+ * references to point to.
+ *
+ * Windows' own Compress-Archive cmdlet stores entries with backslash
+ * separators instead of the ZIP-spec forward slash, so paths are
+ * normalized before anything checks or stores them.
+ */
+export async function extractZipSite(buffer: ArrayBuffer): Promise<ExtractZipResult> {
+  let zip: JSZip;
+  try {
+    zip = await JSZip.loadAsync(buffer);
+  } catch {
+    return { ok: false, reason: "invalid" };
+  }
+
+  const entries = await Promise.all(
+    Object.values(zip.files)
+      .filter((entry) => !entry.dir)
+      .map(async (entry) => ({
+        path: entry.name.replace(/\\/g, "/"),
+        contentBase64: await entry.async("base64"),
+      }))
+  );
+
+  return buildSiteFromEntries(entries);
 }

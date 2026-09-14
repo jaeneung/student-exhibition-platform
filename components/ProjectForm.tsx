@@ -1,10 +1,18 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import type { Dictionary } from "@/lib/dictionary";
+import { useActionState, useState, type ChangeEvent } from "react";
+import { format, type Dictionary } from "@/lib/dictionary";
 import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, PROJECT_GRADES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
 import type { FormActionState } from "@/lib/formAction";
+
+/** A folder-picker <input> reports each file's location within the chosen
+ * folder via the nonstandard but universally-supported `webkitRelativePath`
+ * property — not a typed DOM property, so read it defensively. */
+function relativePathOf(file: File): string {
+  const path = (file as unknown as { webkitRelativePath?: string }).webkitRelativePath;
+  return path && path.length > 0 ? path : file.name;
+}
 
 function FormSection({
   icon,
@@ -129,7 +137,36 @@ export function ProjectForm({
   const isEditing = Boolean(project);
   const f = dict.form;
   const hasExistingUpload = Boolean(project?.uploadedHtml || project?.uploadedFiles);
-  const [launchMode, setLaunchMode] = useState<"url" | "file">(hasExistingUpload ? "file" : "url");
+  const [launchMode, setLaunchMode] = useState<"url" | "file" | "folder">(hasExistingUpload ? "file" : "url");
+  const [folderPaths, setFolderPaths] = useState<string[]>([]);
+
+  // webkitdirectory/directory aren't in React's known DOM attribute list, so
+  // they're set imperatively here rather than as JSX props (which React
+  // would otherwise silently drop) — this is what turns the file picker
+  // into a folder picker in every browser that supports it.
+  function setFolderPickerAttrs(el: HTMLInputElement | null) {
+    el?.setAttribute("webkitdirectory", "");
+    el?.setAttribute("directory", "");
+  }
+
+  function handleFolderChange(event: ChangeEvent<HTMLInputElement>) {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
+      setFolderPaths([]);
+      return;
+    }
+    // webkitRelativePath includes the picked folder's own name as the first
+    // segment (e.g. "my-site/images/4.png") — dropped here so stored paths
+    // are relative to the folder's *contents*, matching how a .zip's
+    // internal paths are used (see lib/uploadedSite.ts).
+    setFolderPaths(
+      Array.from(files).map((file) => {
+        const rel = relativePathOf(file);
+        const slash = rel.indexOf("/");
+        return slash === -1 ? rel : rel.slice(slash + 1);
+      })
+    );
+  }
 
   return (
     <form action={formAction} encType="multipart/form-data" noValidate className="flex flex-col gap-6">
@@ -259,7 +296,7 @@ export function ProjectForm({
             </span>
           </span>
           <div role="radiogroup" aria-label={f.launchMode} className="flex gap-2">
-            {(["url", "file"] as const).map((m) => (
+            {(["url", "file", "folder"] as const).map((m) => (
               <label
                 key={m}
                 className={`flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-medium transition ${
@@ -276,7 +313,7 @@ export function ProjectForm({
                   onChange={() => setLaunchMode(m)}
                   className="sr-only"
                 />
-                {m === "url" ? f.launchModeUrl : f.launchModeFile}
+                {m === "url" ? f.launchModeUrl : m === "file" ? f.launchModeFile : f.launchModeFolder}
               </label>
             ))}
           </div>
@@ -296,7 +333,7 @@ export function ProjectForm({
               placeholder={f.launchUrlPlaceholder}
             />
           </Field>
-        ) : (
+        ) : launchMode === "file" ? (
           <Field
             id="launchFile"
             label={f.launchFile}
@@ -314,6 +351,33 @@ export function ProjectForm({
               aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
               className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
             />
+          </Field>
+        ) : (
+          <Field
+            id="launchFolder"
+            label={f.launchFolder}
+            required={!hasExistingUpload}
+            hint={hasExistingUpload ? f.launchFolderKeepHint : f.launchFolderHint}
+            error={errors.launchFile}
+          >
+            <input
+              ref={setFolderPickerAttrs}
+              id="launchFolder"
+              name="launchFolderFiles"
+              type="file"
+              multiple
+              required={!hasExistingUpload}
+              onChange={handleFolderChange}
+              aria-invalid={Boolean(errors.launchFile)}
+              aria-describedby={errors.launchFile ? "launchFolder-error" : "launchFolder-hint"}
+              className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
+            />
+            <input type="hidden" name="launchFolderPaths" value={JSON.stringify(folderPaths)} />
+            {folderPaths.length > 0 && (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                {format(f.launchFolderFileCount, { count: folderPaths.length })}
+              </p>
+            )}
           </Field>
         )}
 

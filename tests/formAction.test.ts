@@ -486,3 +486,128 @@ describe("resolveLaunchFields — file mode, single image/video/PDF upload", () 
     }
   });
 });
+
+describe("resolveLaunchFields — folder mode", () => {
+  it("builds a site from separately-picked files paired with their relative paths", async () => {
+    const folderFiles = [
+      new File(["<img src='images/4.png'>"], "index.html", { type: "text/html" }),
+      new File(["fake-image-bytes"], "4.png", { type: "image/png" }),
+    ];
+    const folderPaths = ["index.html", "images/4.png"];
+    const result = await resolveLaunchFields({
+      mode: "folder",
+      url: "",
+      file: null,
+      folderFiles,
+      folderPaths,
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.entryPath).toBe("index.html");
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}/index.html`);
+      expect(result.value.uploadedFiles?.["index.html"].contentType).toContain("text/html");
+      expect(result.value.uploadedFiles?.["images/4.png"].contentType).toBe("image/png");
+    }
+  });
+
+  it("falls back to a file's bare name when no matching path was sent", async () => {
+    const folderFiles = [new File(["<p>hi</p>"], "index.html", { type: "text/html" })];
+    const result = await resolveLaunchFields({
+      mode: "folder",
+      url: "",
+      file: null,
+      folderFiles,
+      folderPaths: [],
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.entryPath).toBe("index.html");
+    }
+  });
+
+  it("rejects when no folder was selected", async () => {
+    const result = await resolveLaunchFields({
+      mode: "folder",
+      url: "",
+      file: null,
+      folderFiles: [],
+      folderPaths: [],
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.launchFile).toBeDefined();
+  });
+
+  it("rejects a folder with no HTML file inside", async () => {
+    const folderFiles = [new File(["not html"], "readme.txt", { type: "text/plain" })];
+    const result = await resolveLaunchFields({
+      mode: "folder",
+      url: "",
+      file: null,
+      folderFiles,
+      folderPaths: ["readme.txt"],
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.launchFile).toBeDefined();
+  });
+
+  it("rejects when the combined size of all files exceeds the limit", async () => {
+    const bigContent = "a".repeat(4 * 1024 * 1024 + 1);
+    const folderFiles = [new File([bigContent], "index.html", { type: "text/html" })];
+    const result = await resolveLaunchFields({
+      mode: "folder",
+      url: "",
+      file: null,
+      folderFiles,
+      folderPaths: ["index.html"],
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.launchFile).toBeDefined();
+  });
+
+  it("keeps the existing upload when editing without choosing a new folder", async () => {
+    const existingFiles = {
+      "index.html": { contentBase64: Buffer.from("<p>old</p>").toString("base64"), contentType: "text/html" },
+    };
+    const result = await resolveLaunchFields({
+      mode: "folder",
+      url: "",
+      file: null,
+      folderFiles: [],
+      folderPaths: [],
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+      existing: {
+        launchUrl: `${origin}/files/${id}/index.html`,
+        uploadedFiles: existingFiles,
+        entryPath: "index.html",
+      },
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.uploadedFiles).toBe(existingFiles);
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}/index.html`);
+    }
+  });
+});

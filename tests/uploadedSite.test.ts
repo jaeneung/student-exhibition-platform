@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
-import { contentTypeForPath, extractZipSite } from "@/lib/uploadedSite";
+import { buildSiteFromEntries, contentTypeForPath, extractZipSite } from "@/lib/uploadedSite";
 
 async function buildZip(entries: Record<string, string>): Promise<ArrayBuffer> {
   const zip = new JSZip();
@@ -80,5 +80,41 @@ describe("extractZipSite", () => {
     const buffer = new TextEncoder().encode("not a zip file").buffer;
     const result = await extractZipSite(buffer);
     expect(result).toEqual({ ok: false, reason: "invalid" });
+  });
+});
+
+describe("buildSiteFromEntries", () => {
+  it("builds a site from a flat list of path/content entries (a browser folder picker's shape)", () => {
+    const result = buildSiteFromEntries([
+      { path: "index.html", contentBase64: Buffer.from("<img src='images/4.png'>").toString("base64") },
+      { path: "images/4.png", contentBase64: Buffer.from("fake-bytes").toString("base64") },
+    ]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.entryPath).toBe("index.html");
+      expect(result.value.files["images/4.png"].contentType).toBe("image/png");
+    }
+  });
+
+  it("drops OS file-browser junk (Thumbs.db, desktop.ini, .DS_Store)", () => {
+    const result = buildSiteFromEntries([
+      { path: "index.html", contentBase64: Buffer.from("<p>hi</p>").toString("base64") },
+      { path: "Thumbs.db", contentBase64: "" },
+      { path: "images/desktop.ini", contentBase64: "" },
+      { path: ".DS_Store", contentBase64: "" },
+    ]);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(Object.keys(result.value.files)).toEqual(["index.html"]);
+    }
+  });
+
+  it("reports empty for no entries", () => {
+    expect(buildSiteFromEntries([])).toEqual({ ok: false, reason: "empty" });
+  });
+
+  it("reports no-html when nothing is an HTML file", () => {
+    const result = buildSiteFromEntries([{ path: "readme.txt", contentBase64: "" }]);
+    expect(result).toEqual({ ok: false, reason: "no-html" });
   });
 });

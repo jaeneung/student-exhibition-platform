@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getDictionary } from "@/lib/dictionary";
 import {
+  parseFolderPaths,
   readProjectFormData,
   resolveLaunchFields,
   submissionValuesToProjectFields,
@@ -32,6 +33,8 @@ export async function submitProjectAction(
     mode: formData.get("launchMode")?.toString() ?? "url",
     url: formData.get("launchUrl")?.toString() ?? "",
     file: fileEntry instanceof File ? fileEntry : null,
+    folderFiles: formData.getAll("launchFolderFiles").filter((v): v is File => v instanceof File),
+    folderPaths: parseFolderPaths(formData.get("launchFolderPaths")),
     coverImageUrl: raw.coverImageUrl,
     id,
     origin: await getRequestOrigin(),
