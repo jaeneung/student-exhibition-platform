@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getStore } from "@netlify/blobs";
 import { filterPublicProjects } from "./filters";
+import { isNetlifyRuntime } from "./runtime";
 import { sampleProjects } from "./sampleData";
 import type {
   Project,
@@ -32,14 +33,6 @@ import type {
  */
 const BLOB_STORE_NAME = "exhibition-projects";
 const BLOB_KEY = "projects";
-
-function isNetlifyRuntime(): boolean {
-  // NETLIFY=true is only set during Netlify's build step, not inside the
-  // deployed function's own runtime environment — verified by deploying a
-  // diagnostic route and inspecting process.env there. NETLIFY_BLOBS_CONTEXT
-  // is what's actually present at runtime, and only when Blobs are usable.
-  return Boolean(process.env.NETLIFY_BLOBS_CONTEXT);
-}
 
 // Overridable so tests can point the file-backed store at a throwaway file
 // instead of the real data/projects.json; production code never sets this.

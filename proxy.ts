@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE_NAME, isValidSessionToken } from "@/lib/auth";
 import { getProjectByIdForManagement, getPublicProjectById } from "@/lib/store";
 
 /**
@@ -16,9 +17,18 @@ import { getProjectByIdForManagement, getPublicProjectById } from "@/lib/store";
  * lib/store.ts (getPublicProjectById / getProjectByIdForManagement) — it is
  * a status-code convenience on top of that enforcement, not a second
  * enforcement point to keep in sync by hand.
+ *
+ * The /manage auth check below is a genuine second enforcement point, by
+ * necessity: scripts/netlify-build.mjs strips this file before the site's
+ * actual Netlify build (a Windows-only Edge Function bundling bug, unrelated
+ * to auth), so this proxy never runs on the deployed site at all. The real,
+ * reliable enforcement is the identical check duplicated inside
+ * app/manage/(list)/page.tsx, app/manage/[id]/edit/page.tsx, and the Server
+ * Actions in app/manage/actions.ts — this file only adds a faster rejection
+ * for local dev and any future deployment path where it does run.
  */
 export const config = {
-  matcher: ["/projects/:id", "/manage/:id/edit"],
+  matcher: ["/projects/:id", "/manage", "/manage/:id/edit"],
 };
 
 export default async function proxy(request: NextRequest) {
@@ -32,6 +42,14 @@ export default async function proxy(request: NextRequest) {
       return NextResponse.rewrite(new URL("/gone", request.url));
     }
     return NextResponse.next();
+  }
+
+  const isManageRoute = pathname === "/manage" || /^\/manage\/[^/]+\/edit$/.test(pathname);
+  if (isManageRoute) {
+    const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+    if (!isValidSessionToken(token)) {
+      return NextResponse.redirect(new URL("/manage/login", request.url));
+    }
   }
 
   const editMatch = pathname.match(/^\/manage\/([^/]+)\/edit$/);

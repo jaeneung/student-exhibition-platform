@@ -15,20 +15,22 @@ Next.js (App Router) + TypeScript + Tailwind CSS — zod로 폼 검증, `qrcode`
   `lib/sampleData.ts`로 자동 시딩)
 - **Netlify 배포**: [Netlify Blobs](https://docs.netlify.com/blobs/overview/) — Netlify
   Functions에는 여러 요청 간에 공유되는 쓰기 가능한 파일 시스템이 없으므로, 배포 환경에서는
-  제출/상태 변경이 실제로 저장되도록 이 백엔드를 사용합니다. `process.env.NETLIFY`가
-  `"true"`인지로 자동 판별하며 별도 설정이 필요 없습니다.
+  제출/상태 변경이 실제로 저장되도록 이 백엔드를 사용합니다. Netlify Functions 런타임에서만
+  존재하는 `process.env.NETLIFY_BLOBS_CONTEXT`로 자동 판별하며(`lib/runtime.ts`) 별도
+  설정이 필요 없습니다.
 
 ```
 app/
   (gallery)/         # 방문자 갤러리(검색/필터), URL은 "/"
   projects/[id]/      # 프로젝트 상세 (실행 링크 + QR 코드)
   submit/              # 프로젝트 제출 폼 (Server Action)
-  manage/              # 전시 상태 관리 화면 (Server Action)
+  manage/              # 전시 상태 관리 화면 (Server Action, 교사 로그인 필요)
+  manage/login/        # 교사 로그인 폼 (Server Action)
   files/[id]/          # 업로드된 HTML 파일을 실행 링크로 그대로 서빙하는 라우트
   gone/                # 비공개/미존재 프로젝트에 대한 진짜 404 응답용 내부 라우트
 lib/
   types.ts, schema.ts, formAction.ts, validation.ts, thumbnail.ts, origin.ts,
-  filters.ts, store.ts, sampleData.ts
+  filters.ts, store.ts, sampleData.ts, runtime.ts, auth.ts, loginThrottle.ts
 components/            # ProjectCard, SearchFilterBar, LaunchButton, QrCode 등
 proxy.ts               # 상세/수정 라우트 접근 전 존재 여부를 먼저 확인해 진짜 404를 반환
 tests/                 # vitest 단위 테스트
@@ -86,6 +88,33 @@ npm run build
 검토 절차에 달려 있습니다 — 즉 교사가 검토해 '전시중'으로 바꾸기 전까지는 방문자
 갤러리에 노출되지 않는다는 점이 유일한 방어선입니다.
 
+## 교사 로그인
+
+`/manage`(전시 상태 관리)와 `/manage/[id]/edit`은 `/manage/login`에서 로그인한 교사만 볼 수
+있습니다(`lib/auth.ts`). 학교 하나에 교사 계정 하나만 있는 간단한 구성이지만, 다음은 실제
+보안 조치입니다 — 링크만 숨기는 UI 차원의 가림막이 아닙니다.
+
+- **비밀번호는 평문으로 저장되지 않습니다.** 환경 변수에는 무작위 salt를 더한 scrypt
+  해시(`TEACHER_PASSWORD_SALT`, `TEACHER_PASSWORD_HASH`)만 저장하며, 원본 비밀번호는
+  git 저장소나 로그 어디에도 남지 않습니다. 로컬 개발용 값은 `.env`(gitignore 처리됨)에,
+  배포용 값은 Netlify 환경 변수에 별도로 설정합니다. 새 계정을 만들려면 `.env.example`의
+  안내를 따르세요.
+- **세션은 서명된 만료 토큰입니다.** 단순한 `loggedIn=true` 쿠키가 아니라
+  `<만료시각>.<HMAC-SHA256 서명>` 형태의 토큰을 httpOnly 쿠키로 저장합니다
+  (`SESSION_SECRET`으로 서명). 이 값을 모르면 유효한 세션을 위조할 수 없고, 훔친 쿠키도
+  8시간 후에는 만료됩니다.
+- **로그인 시도 제한은 IP 기준입니다.** 같은 IP에서 15분 내 5회 로그인 실패 시 잠시
+  차단됩니다(`lib/loginThrottle.ts`). 쿠키가 아니라 IP를 기준으로 세므로 쿠키를 지우거나
+  시크릿 창을 열어도 우회되지 않습니다. `lib/store.ts`와 동일하게 배포 환경에서는 Netlify
+  Blobs, 로컬에서는 메모리를 사용합니다.
+- **실제 방어선은 페이지/Server Action 안입니다.** `proxy.ts`도 로그인 여부를 확인하지만,
+  이 저장소는 Windows에서 Netlify Edge Function 번들링 버그를 피하기 위해
+  `scripts/netlify-build.mjs`가 실제 빌드 직전에 `proxy.ts`를 항상 제거했다가 복원합니다 —
+  즉 배포된 사이트에서는 `proxy.ts`가 전혀 실행되지 않습니다. 그래서 진짜 접근 제어는
+  `app/manage/(list)/page.tsx`, `app/manage/[id]/edit/page.tsx`, `app/manage/actions.ts`의
+  각 Server Action 안에서 `hasValidTeacherSession()` / `requireTeacherSession()`으로
+  이중 확인합니다; `proxy.ts` 쪽 확인은 로컬 개발에서만 동작하는 보너스입니다.
+
 ## 배포 (Netlify + GitHub)
 
 이 저장소는 GitHub에 연결된 Netlify 사이트로 배포되어 있습니다. `main` 브랜치에 push하면
@@ -102,9 +131,10 @@ netlify init                 # 현재 폴더를 새 Netlify 사이트와 연결
 
 ## 알려진 한계 (실제 학교 배포 전 필요 작업)
 
-- **인증 없음**: `/manage` 관리 화면은 로그인으로 보호되지 않습니다. 주소를 아는 누구나
-  모든 프로젝트를 열람하고 상태를 바꿀 수 있습니다. 실제 배포 전 교사 로그인 등 접근
-  제어가 반드시 필요합니다.
+- **교사 계정이 하나뿐입니다**: 위 "교사 로그인"에서 설명한 대로 로그인 보호 자체는
+  적용되어 있지만, 교사별 계정/역할 구분은 없는 단일 공유 계정 방식입니다. 여러 교사가
+  각자의 계정으로 구분되어 활동 기록을 남겨야 하는 규모라면 실제 다중 사용자 인증
+  시스템으로 교체가 필요합니다.
 - **정식 데이터베이스 아님**: 로컬은 JSON 파일, 배포 환경은 Netlify Blobs를 쓰지만 둘 다
   스키마 마이그레이션이 없고, 동시 쓰기는 마지막에 쓴 내용이 이전 내용을 덮어씁니다(원자적
   갱신이 아님). 학교 전시 부스 수준의 트래픽에는 충분하지만, 다수 교사가 동시에 편집하거나

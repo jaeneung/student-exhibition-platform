@@ -1,6 +1,9 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE_NAME, requireTeacherSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/dictionary";
 import {
   managementValuesToProjectFields,
@@ -14,6 +17,12 @@ import { getRequestOrigin } from "@/lib/origin";
 import { getManagementSchema } from "@/lib/schema";
 import { getProjectByIdForManagement, updateProject } from "@/lib/store";
 import type { ExhibitionStatus, Project, ProjectUpdateInput } from "@/lib/types";
+
+export async function logoutAction(): Promise<void> {
+  const store = await cookies();
+  store.delete(SESSION_COOKIE_NAME);
+  redirect("/manage/login");
+}
 
 function toUpdateInput(project: Project): ProjectUpdateInput {
   return {
@@ -37,8 +46,9 @@ function toUpdateInput(project: Project): ProjectUpdateInput {
 }
 
 /** Quick one-click status change from the management list, without going
- * through the full edit form. No auth exists yet — see README for the gap. */
+ * through the full edit form. */
 export async function changeStatusAction(id: string, status: ExhibitionStatus): Promise<void> {
+  await requireTeacherSession();
   const existing = await getProjectByIdForManagement(id);
   if (!existing) return;
   await updateProject(id, { ...toUpdateInput(existing), status });
@@ -52,6 +62,7 @@ export async function updateProjectAction(
   _prevState: FormActionState,
   formData: FormData
 ): Promise<FormActionState> {
+  await requireTeacherSession();
   const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
   const parsed = getManagementSchema(dict).safeParse(raw);

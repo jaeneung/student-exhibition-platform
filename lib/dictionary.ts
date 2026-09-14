@@ -131,9 +131,11 @@ const ko = {
   manage: {
     title: "프로젝트 관리",
     subtitle: "제출된 프로젝트를 검토하고 전시 상태를 바꿀 수 있어요.",
-    mvpNoticeLabel: "MVP 안내:",
+    mvpNoticeLabel: "안내:",
     mvpNoticeText:
-      "이 관리 화면은 아직 로그인으로 보호되지 않아, 이 페이지 주소를 아는 누구나 접근할 수 있습니다. 실제 학교 현장에서 사용하기 전에 반드시 교사 로그인 등 접근 제한을 추가해야 합니다.",
+      "이 관리 화면은 교사 로그인 한 계정으로 보호됩니다. 여러 명이 동시에 개별 계정으로 접근하는 기능은 아직 없습니다 — 자세한 내용은 README를 참고하세요.",
+    loggedInAs: "{username}님으로 로그인됨",
+    logoutButton: "로그아웃",
     emptyTitle: "아직 제출된 프로젝트가 없어요",
     emptyMessage: "학생이 프로젝트를 제출하면 여기에서 검토할 수 있어요.",
     editLink: "상세 수정",
@@ -141,6 +143,17 @@ const ko = {
     editTitle: "프로젝트 수정",
     backToManage: "← 프로젝트 관리로 돌아가기",
     editSubmitLabel: "수정 저장",
+  },
+  auth: {
+    loginTitle: "교사 로그인",
+    loginSubtitle: "프로젝트 관리 화면은 교사만 이용할 수 있어요.",
+    usernameLabel: "아이디",
+    passwordLabel: "비밀번호",
+    loginButton: "로그인",
+    loginButtonPending: "로그인 중...",
+    invalidCredentials: "아이디 또는 비밀번호가 올바르지 않습니다.",
+    tooManyAttempts: "로그인 시도가 너무 많아요. {minutes}분 후 다시 시도해 주세요.",
+    serverNotConfigured: "로그인 기능이 아직 설정되지 않았어요. 관리자에게 문의해 주세요.",
   },
   guide: {
     title: "프로젝트 제출 가이드",
@@ -379,9 +392,11 @@ const en: Dictionary = {
   manage: {
     title: "Manage Projects",
     subtitle: "Review submitted projects and change their exhibition status.",
-    mvpNoticeLabel: "MVP notice:",
+    mvpNoticeLabel: "Notice:",
     mvpNoticeText:
-      "This management screen isn't protected by a login yet — anyone who knows this page's address can access it. Access control (e.g. a teacher login) must be added before real-world school use.",
+      "This management screen is protected by a single shared teacher login. There's no support yet for multiple staff with individual accounts — see the README for details.",
+    loggedInAs: "Logged in as {username}",
+    logoutButton: "Log out",
     emptyTitle: "No projects submitted yet",
     emptyMessage: "Once a student submits a project, you'll be able to review it here.",
     editLink: "Edit Details",
@@ -389,6 +404,17 @@ const en: Dictionary = {
     editTitle: "Edit Project",
     backToManage: "← Back to Manage Projects",
     editSubmitLabel: "Save Changes",
+  },
+  auth: {
+    loginTitle: "Teacher Login",
+    loginSubtitle: "The project management screen is for teachers only.",
+    usernameLabel: "Username",
+    passwordLabel: "Password",
+    loginButton: "Log In",
+    loginButtonPending: "Logging in...",
+    invalidCredentials: "Incorrect username or password.",
+    tooManyAttempts: "Too many login attempts. Please try again in {minutes} minutes.",
+    serverNotConfigured: "Login isn't configured yet. Please contact an administrator.",
   },
   guide: {
     title: "Project Submission Guide",

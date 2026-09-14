@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ProjectForm } from "@/components/ProjectForm";
+import { hasValidTeacherSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { getProjectByIdForManagement } from "@/lib/store";
@@ -11,6 +12,13 @@ export default async function EditProjectPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  // The reliable enforcement point: proxy.ts also checks this, but it's
+  // stripped from the actual Netlify build (see proxy.ts's comment), so this
+  // in-page check is what actually protects the deployed site.
+  if (!(await hasValidTeacherSession())) {
+    redirect("/manage/login");
+  }
+
   const dict = getDictionary(await getLocale());
   const { id } = await params;
   // Deliberately not run through localizeProject: this form edits and saves

@@ -1,13 +1,15 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
 import { StatusBadge } from "@/components/StatusBadge";
+import { getTeacherUsername, hasValidTeacherSession } from "@/lib/auth";
 import { getCategoryStyle } from "@/lib/categoryStyles";
 import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getAllProjects } from "@/lib/store";
 import { EXHIBITION_STATUSES, type ExhibitionStatus } from "@/lib/types";
-import { changeStatusAction } from "../actions";
+import { changeStatusAction, logoutAction } from "../actions";
 
 const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "private"];
 
@@ -19,25 +21,50 @@ const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "priva
 export const dynamic = "force-dynamic";
 
 export default async function ManagePage() {
+  // The reliable enforcement point: proxy.ts also checks this, but it's
+  // stripped from the actual Netlify build (see proxy.ts's comment), so this
+  // in-page check is what actually protects the deployed site.
+  if (!(await hasValidTeacherSession())) {
+    redirect("/manage/login");
+  }
+
   const locale = await getLocale();
   const dict = getDictionary(locale);
   const projects = (await getAllProjects()).map((p) => localizeProject(p, locale));
+  const username = getTeacherUsername();
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-2">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl shadow-sm" aria-hidden="true">
-          🗂️
-        </span>
-        <h1 className="text-2xl font-bold sm:text-3xl">{dict.manage.title}</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">{dict.manage.subtitle}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex flex-col gap-2">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-2xl shadow-sm" aria-hidden="true">
+            🗂️
+          </span>
+          <h1 className="text-2xl font-bold sm:text-3xl">{dict.manage.title}</h1>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">{dict.manage.subtitle}</p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          {username && (
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">
+              {format(dict.manage.loggedInAs, { username })}
+            </span>
+          )}
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              className="rounded-xl border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+            >
+              {dict.manage.logoutButton}
+            </button>
+          </form>
+        </div>
       </div>
 
       <div
-        role="alert"
-        className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+        role="status"
+        className="flex items-start gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
       >
-        <span aria-hidden="true">⚠️</span>
+        <span aria-hidden="true">ℹ️</span>
         <p>
           <strong className="font-semibold">{dict.manage.mvpNoticeLabel} </strong>
           {dict.manage.mvpNoticeText}
