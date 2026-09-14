@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getCategoryStyle } from "@/lib/categoryStyles";
 import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
+import { localizeProject } from "@/lib/projectLocalization";
 import { getPublicProjectById } from "@/lib/store";
 
 function DetailSection({
@@ -36,14 +37,16 @@ export default async function ProjectDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const dict = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
   const { id } = await params;
-  const project = await getPublicProjectById(id);
+  const projectRaw = await getPublicProjectById(id);
 
-  if (!project) {
+  if (!projectRaw) {
     notFound();
   }
 
+  const project = localizeProject(projectRaw, locale);
   const { icon, gradient } = getCategoryStyle(project.category);
   const categoryLabel = dict.categories[project.category] ?? project.category;
 

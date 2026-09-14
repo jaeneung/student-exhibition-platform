@@ -13,6 +13,10 @@ export default async function EditProjectPage({
 }) {
   const dict = getDictionary(await getLocale());
   const { id } = await params;
+  // Deliberately not run through localizeProject: this form edits and saves
+  // the canonical stored fields, so it must show (and write back) the actual
+  // authored content — showing the English overlay here would mean saving
+  // the form silently overwrites the Korean original with it.
   const project = await getProjectByIdForManagement(id);
 
   if (!project) {

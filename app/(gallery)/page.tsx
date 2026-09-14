@@ -3,9 +3,16 @@ import { EmptyState } from "@/components/EmptyState";
 import { ProjectCard } from "@/components/ProjectCard";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { format, getDictionary } from "@/lib/dictionary";
-import { getCategoryFacets, getGradeFacets, getOnDisplayProjects, getTagFacets } from "@/lib/filters";
+import {
+  filterPublicProjects,
+  getCategoryFacets,
+  getGradeFacets,
+  getOnDisplayProjects,
+  getTagFacets,
+} from "@/lib/filters";
 import { getLocale } from "@/lib/i18n";
-import { getAllProjects, getPublicProjects } from "@/lib/store";
+import { localizeProject } from "@/lib/projectLocalization";
+import { getAllProjects } from "@/lib/store";
 
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -16,17 +23,21 @@ export default async function GalleryPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const dict = getDictionary(await getLocale());
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
   const params = await searchParams;
   const q = firstValue(params.q);
   const category = firstValue(params.category);
   const tag = firstValue(params.tag);
   const grade = firstValue(params.grade);
 
-  const [projects, allProjects] = await Promise.all([
-    getPublicProjects({ q, category, tag, grade }),
-    getAllProjects(),
-  ]);
+  // Localized before filtering/faceting (not after) so that in English mode
+  // the tag facets offered, the tag actually being filtered on, and the tag
+  // text shown on cards are all the same English string — filtering by a
+  // free-text field like tags only works if all three agree.
+  const rawProjects = await getAllProjects();
+  const allProjects = rawProjects.map((p) => localizeProject(p, locale));
+  const projects = filterPublicProjects(allProjects, { q, category, tag, grade });
 
   const categories = getCategoryFacets(allProjects);
   const tags = getTagFacets(allProjects);

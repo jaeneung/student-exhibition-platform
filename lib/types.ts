@@ -21,6 +21,24 @@ export const PROJECT_GRADES = ["G6", "G7", "G8", "G9"] as const;
 
 export type ProjectGrade = (typeof PROJECT_GRADES)[number];
 
+/** An optional per-locale overlay of the language-bearing fields below.
+ * Exists only for this platform's own fictional seed/demo data (see
+ * lib/sampleData.ts) so an English-locale visitor sees genuinely English
+ * content everywhere, including sample cards — real student submissions
+ * never set this, so their content always stays in whichever language the
+ * student actually wrote it in, regardless of the visitor's UI language. */
+export interface ProjectTranslation {
+  title?: string;
+  shortDescription?: string;
+  fullDescription?: string;
+  creatorName?: string;
+  tags?: string[];
+  motivation?: string;
+  usageInstructions?: string;
+  safetyNotes?: string;
+  technologies?: string[];
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -49,6 +67,7 @@ export interface Project {
   handsOnAvailable: boolean;
   createdAt: string;
   updatedAt: string;
+  translations?: Partial<Record<"en", ProjectTranslation>>;
 }
 
 /** Fields a visitor/student can set when submitting a project. Status is always

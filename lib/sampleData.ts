@@ -5,6 +5,11 @@ import type { Project } from "./types";
  * fictional and exist only to make the platform usable out of the box — this
  * is not real student data and is not persisted anywhere outside this file
  * until the app writes its working copy to data/projects.json.
+ *
+ * Each entry also carries an English `translations.en` overlay (see
+ * lib/projectLocalization.ts) so switching the site to English shows fully
+ * English sample content too, instead of leaving these fictional Korean
+ * projects untranslated the way a real student's own submission would stay.
  */
 const now = "2026-08-20T00:00:00.000Z";
 
@@ -34,6 +39,19 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "Carbon Footprint Calculator",
+        shortDescription: "A website that estimates your daily carbon footprint from your habits.",
+        fullDescription:
+          "Enter your transportation, meals, and screen time to get a rough estimate of your daily carbon footprint, along with suggestions for cutting it down. Started as an Eco Club project and finished with vibe coding.",
+        creatorName: "Eco Club",
+        tags: ["environment", "web app", "calculator"],
+        motivation: "Made to turn concern about the climate crisis into everyday behavior change.",
+        usageInstructions: "Choose today's transportation and meal type in the form below to see your result instantly.",
+        technologies: ["HTML", "CSS", "JavaScript"],
+      },
+    },
   },
   {
     id: "sample-code-maze",
@@ -54,6 +72,20 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "The Code Maze",
+        shortDescription: "A web game where you escape a maze against the clock while answering coding-concept quizzes.",
+        fullDescription:
+          "Move your character with the arrow keys to escape the maze, and answer the coding-concept quiz at each fork to unlock a shortcut. The first game project made together by three Computer Club students.",
+        creatorName: "The Coding Trio",
+        tags: ["game", "quiz", "coding education"],
+        motivation: "Made while thinking about how to turn concepts learned in coding class into a fun review game.",
+        usageInstructions: "Move with the arrow keys or the on-screen buttons, and pick an answer when a bonus quiz appears.",
+        safetyNotes: "Sound effects play during the game — headphones are recommended.",
+        technologies: ["JavaScript", "Canvas API"],
+      },
+    },
   },
   {
     id: "sample-lunch-recommender",
@@ -74,6 +106,19 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "Lunch Menu Recommender",
+        shortDescription: "A mobile app that looks at today's school lunch and recommends other dishes with a similar taste.",
+        fullDescription:
+          "Using sample menus modeled on a school lunch notification service, this app recommends dishes with a similar flavor to today's lunch — made to make waiting for lunch a little more fun.",
+        creatorName: "Team Delicious Day",
+        tags: ["app", "everyday life", "recommendation"],
+        motivation: "Got the idea from seeing friends wonder about the lunch menu ahead of time.",
+        usageInstructions: "Open the app and pick today's date to see a recommendation card. Tap the card for more detail.",
+        technologies: ["React Native", "Expo"],
+      },
+    },
   },
   {
     id: "sample-maeumi-chatbot",
@@ -94,6 +139,20 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "Maeumi — a Peer-Support AI Chatbot",
+        shortDescription: "An AI chatbot for talking comfortably about friendship troubles or school stress.",
+        fullDescription:
+          "A conversational chatbot made so students can share what's on their mind without pressure. It's not a substitute for a professional counselor's advice — the focus is on offering empathy and example advice.",
+        creatorName: "Team Maeum-i-eum",
+        tags: ["AI", "chatbot", "mental health support"],
+        motivation: "Designed as a stopgap after noticing long wait times during peer-counseling club activities.",
+        usageInstructions: "Type what's on your mind into the chat box, and the bot replies with empathy and example advice.",
+        safetyNotes: "This chatbot cannot replace professional counseling. If you're facing something serious, please tell a teacher or school counselor.",
+        technologies: ["Python", "AI API integration"],
+      },
+    },
   },
   {
     id: "sample-solar-system",
@@ -114,6 +173,19 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "Interactive Solar System Explorer",
+        shortDescription: "A 3D interactive web experience for exploring the solar system by clicking and spinning the planets.",
+        fullDescription:
+          "A 3D web experience where you can rotate and zoom in on solar system planets with your mouse or touch to learn about each one. Started as a science performance-assessment project and polished for exhibition.",
+        creatorName: "Space Explorers Club",
+        tags: ["science", "3D", "interactive"],
+        motivation: "Textbook illustrations alone made it hard to grasp planet sizes and distances, so we built a model you can actually manipulate.",
+        usageInstructions: "Drag the screen to rotate the view, and tap a planet to see its info card.",
+        technologies: ["Three.js", "WebGL"],
+      },
+    },
   },
   {
     id: "sample-weather-alert-pending",
@@ -134,6 +206,17 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "Weather Alert (Pending-Review Sample)",
+        shortDescription: "An unfinished web app that tells you if you'll need an umbrella for your commute.",
+        fullDescription:
+          "A sample project that demonstrates the not-yet-approved state. A 'Pending Review' project should only be visible on the management screen, never in the visitor gallery.",
+        creatorName: "Weather Lab",
+        tags: ["weather", "everyday life"],
+        technologies: ["JavaScript"],
+      },
+    },
   },
   {
     id: "sample-private-test",
@@ -154,5 +237,15 @@ export const sampleProjects: Project[] = [
     handsOnAvailable: true,
     createdAt: now,
     updatedAt: now,
+    translations: {
+      en: {
+        title: "Private Test Project (Sample)",
+        shortDescription: "A sample showing that a Private project stays hidden from visitors.",
+        fullDescription:
+          "This project is an example of the 'Private' status. It must not appear anywhere in the visitor gallery or detail pages, and should only be viewable from the management screen.",
+        creatorName: "Test Account",
+        tags: ["test"],
+      },
+    },
   },
 ];

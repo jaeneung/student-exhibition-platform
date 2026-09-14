@@ -4,6 +4,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { getCategoryStyle } from "@/lib/categoryStyles";
 import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
+import { localizeProject } from "@/lib/projectLocalization";
 import { getAllProjects } from "@/lib/store";
 import { EXHIBITION_STATUSES, type ExhibitionStatus } from "@/lib/types";
 import { changeStatusAction } from "../actions";
@@ -18,8 +19,9 @@ const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "priva
 export const dynamic = "force-dynamic";
 
 export default async function ManagePage() {
-  const dict = getDictionary(await getLocale());
-  const projects = await getAllProjects();
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const projects = (await getAllProjects()).map((p) => localizeProject(p, locale));
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
