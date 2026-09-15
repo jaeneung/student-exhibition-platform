@@ -1,10 +1,15 @@
 "use client";
 
-import { useActionState, useState, type ChangeEvent } from "react";
+import { useActionState, useState, type ChangeEvent, type FormEvent } from "react";
 import { format, type Dictionary } from "@/lib/dictionary";
 import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, PROJECT_GRADES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
 import type { FormActionState } from "@/lib/formAction";
+import { MAX_UPLOAD_BYTES } from "@/lib/uploadLimits";
+
+function formatMb(bytes: number): string {
+  return (bytes / (1024 * 1024)).toFixed(1);
+}
 
 /** A folder-picker <input> reports each file's location within the chosen
  * folder via the nonstandard but universally-supported `webkitRelativePath`
@@ -151,6 +156,20 @@ export function ProjectForm({
   const [folderPaths, setFolderPaths] = useState<string[]>([]);
   const [singleFileName, setSingleFileName] = useState<string | undefined>(undefined);
   const isHtmlOnlySelected = launchMode === "file" && Boolean(singleFileName && /\.html?$/i.test(singleFileName));
+  // Total size of whatever is currently selected in file/folder mode, once
+  // it exceeds MAX_UPLOAD_BYTES — checked client-side (not just left to the
+  // server) because Netlify's own platform rejects an oversized request
+  // with a raw 413 before this app's code ever runs, which would otherwise
+  // show the student a generic "Something went wrong" with no indication
+  // that the file's size was the actual problem. Catching it here means the
+  // real reason is always shown, and the request is never even sent.
+  const [oversizeBytes, setOversizeBytes] = useState<number | undefined>(undefined);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    if (oversizeBytes !== undefined) {
+      event.preventDefault();
+    }
+  }
 
   // webkitdirectory/directory aren't in React's known DOM attribute list, so
   // they're set imperatively here rather than as JSX props (which React
@@ -165,8 +184,11 @@ export function ProjectForm({
     const files = event.target.files;
     if (!files || files.length === 0) {
       setFolderPaths([]);
+      setOversizeBytes(undefined);
       return;
     }
+    const totalBytes = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+    setOversizeBytes(totalBytes > MAX_UPLOAD_BYTES ? totalBytes : undefined);
     // webkitRelativePath includes the picked folder's own name as the first
     // segment (e.g. "my-site/images/4.png") — dropped here so stored paths
     // are relative to the folder's *contents*, matching how a .zip's
@@ -181,7 +203,13 @@ export function ProjectForm({
   }
 
   return (
-    <form action={formAction} encType="multipart/form-data" noValidate className="flex flex-col gap-6">
+    <form
+      action={formAction}
+      onSubmit={handleSubmit}
+      encType="multipart/form-data"
+      noValidate
+      className="flex flex-col gap-6"
+    >
       {state.status === "error" && state.formError && (
         <div
           role="alert"
@@ -308,7 +336,10 @@ export function ProjectForm({
                   name="launchMode"
                   value={m}
                   checked={launchMode === m}
-                  onChange={() => setLaunchMode(m)}
+                  onChange={() => {
+                    setLaunchMode(m);
+                    setOversizeBytes(undefined);
+                  }}
                   className="sr-only"
                 />
                 {m === "url" ? f.launchModeUrl : m === "file" ? f.launchModeFile : f.launchModeFolder}
@@ -351,7 +382,11 @@ export function ProjectForm({
               type="file"
               required={!hasExistingUpload}
               accept=".html,.htm,.zip,.png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.webm,.mov,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.csv,.txt,.rtf,text/html,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/gif,image/webp,application/pdf,video/mp4,video/webm,video/quicktime"
-              onChange={(e) => setSingleFileName(e.target.files?.[0]?.name)}
+              onChange={(e) => {
+                const selected = e.target.files?.[0];
+                setSingleFileName(selected?.name);
+                setOversizeBytes(selected && selected.size > MAX_UPLOAD_BYTES ? selected.size : undefined);
+              }}
               aria-invalid={Boolean(errors.launchFile)}
               aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
               className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
@@ -363,6 +398,18 @@ export function ProjectForm({
               >
                 <span aria-hidden="true">⚠️</span>
                 {f.launchFileHtmlOnlyWarning}
+              </div>
+            )}
+            {oversizeBytes !== undefined && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
+              >
+                <span aria-hidden="true">⛔</span>
+                {format(f.launchFileTooLargeWarning, {
+                  size: formatMb(oversizeBytes),
+                  max: formatMb(MAX_UPLOAD_BYTES),
+                })}
               </div>
             )}
           </Field>
@@ -387,10 +434,22 @@ export function ProjectForm({
               className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
             />
             <input type="hidden" name="launchFolderPaths" value={JSON.stringify(folderPaths)} />
-            {folderPaths.length > 0 && (
+            {folderPaths.length > 0 && oversizeBytes === undefined && (
               <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {format(f.launchFolderFileCount, { count: folderPaths.length })}
               </p>
+            )}
+            {oversizeBytes !== undefined && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
+              >
+                <span aria-hidden="true">⛔</span>
+                {format(f.launchFileTooLargeWarning, {
+                  size: formatMb(oversizeBytes),
+                  max: formatMb(MAX_UPLOAD_BYTES),
+                })}
+              </div>
             )}
           </Field>
         )}
@@ -507,7 +566,7 @@ export function ProjectForm({
 
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || oversizeBytes !== undefined}
         className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 text-base font-semibold text-white shadow-md shadow-brand-600/30 transition hover:from-brand-700 hover:to-brand-800 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
       >
         {isPending ? f.submitButtonSaving : submitLabel}

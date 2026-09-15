@@ -10,6 +10,7 @@ import type {
   UploadedFile,
 } from "./types";
 import { buildSiteFromEntries, contentTypeForPath, extractZipSite } from "./uploadedSite";
+import { MAX_UPLOAD_BYTES } from "./uploadLimits";
 import { isValidLaunchUrl } from "./validation";
 
 export type FormFieldErrors = Record<string, string>;
@@ -106,12 +107,6 @@ export function zodIssuesToFieldErrors(error: z.ZodError): FormFieldErrors {
   }
   return errors;
 }
-
-// Capped at 4MB, not higher: Netlify's own function/CDN layer rejects
-// anything above ~4.5MB raw with a 413 before this app's code ever runs
-// (see next.config.ts's bodySizeLimit comment) — a genuinely bigger cap
-// would need a different upload path, not a bigger number here.
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 export interface ResolvedLaunch {
   launchUrl: string;

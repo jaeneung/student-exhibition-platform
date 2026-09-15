@@ -124,6 +124,8 @@ const ko = {
     launchFileKeepHint: "이미 업로드된 파일이 있어요. 새 파일을 선택하면 기존 파일을 대체해요. 그대로 두려면 비워두세요.",
     launchFileHtmlOnlyWarning:
       "HTML 파일 하나만 올렸어요. 이 파일 안에서 이미지나 동영상을 상대경로로 불러온다면(예: <img src=\"photo.png\">) 전시관에서는 보이지 않아요. 이미지나 동영상이 있다면 위의 '📂 폴더 업로드'나 ZIP 파일 업로드를 사용해 주세요.",
+    launchFileTooLargeWarning:
+      "선택한 파일이 {size}MB로 너무 커요(최대 {max}MB) — 이대로 제출하면 실패해요. 더 작은 파일을 선택하거나, 동영상이라면 유튜브 등에 올린 뒤 '🔗 링크 입력'으로 그 주소를 제출해 주세요.",
     launchFolder: "웹사이트 폴더 업로드",
     launchFolderHint:
       "압축하지 않고 폴더를 통째로 올릴 수 있어요. 웹사이트가 들어있는 폴더를 선택하면 이미지, 동영상 등 안의 모든 파일이 원래 구조 그대로 함께 올라가요. index.html이 있으면 그 파일을 실행 페이지로 사용하고, 없으면 가장 위쪽에 있는 HTML 파일을 사용해요. 전체 용량 합계가 4MB를 넘으면 안 돼요. (일부 모바일 브라우저는 폴더 선택을 지원하지 않을 수 있어요 — 그럴 땐 컴퓨터에서 제출해 주세요.)",
@@ -403,6 +405,8 @@ const en: Dictionary = {
     launchFileKeepHint: "A file is already uploaded. Choosing a new one replaces it — leave this blank to keep the current file.",
     launchFileHtmlOnlyWarning:
       "You uploaded a single HTML file. If it loads any images or video by a relative path (like <img src=\"photo.png\">), those won't show up in the gallery. If your project uses any, use '📂 Upload a Folder' above or a .zip instead.",
+    launchFileTooLargeWarning:
+      "The selected file is {size}MB, which is too big (max {max}MB) — submitting this will fail. Choose a smaller file, or if it's a video, upload it to YouTube or similar and submit that link instead using '🔗 Enter a Link'.",
     launchFolder: "Upload Your Website Folder",
     launchFolderHint:
       "Upload the whole folder as-is, no zipping required. Pick the folder your website lives in and every file inside it — images, video, everything — comes along in the same structure. If there's an index.html, that becomes the launch page; otherwise the topmost HTML file is used. The total size can't be over 4MB. (Some mobile browsers don't support picking a folder — submit from a computer if that happens.)",
