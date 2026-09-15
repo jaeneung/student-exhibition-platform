@@ -114,6 +114,8 @@ const ko = {
     launchModeUrl: "🔗 링크 입력",
     launchModeFile: "📁 파일 업로드",
     launchModeFolder: "📂 폴더 업로드",
+    launchModeFolderBadge: "추천",
+    launchModeNote: "💡 이미지나 동영상이 있는 웹사이트라면 '📂 폴더 업로드'를 사용하세요 — HTML 파일 하나만 올리면 그 안의 이미지나 동영상은 보이지 않아요.",
     launchUrl: "실행 링크",
     launchUrlHint: "Replit, Glitch, Netlify, Vercel, v0, bolt.new, lovable.dev 같은 곳에 올린 링크를 붙여넣어 주세요.",
     launchUrlPlaceholder: "https://...",
@@ -121,6 +123,8 @@ const ko = {
     launchFileHint:
       "HTML 파일 하나로 끝나는 프로젝트라면 그 파일(.html)을 올려주세요. 이미지 등 다른 파일도 함께 쓴다면 폴더 전체를 압축한 ZIP 파일(.zip)을 올리거나, 압축 없이 그대로 올리려면 아래 '📂 폴더 업로드'를 사용하세요 — 사진이 로컬 경로를 가리키고 있으면 전시관에서는 보이지 않으니 이미지가 있다면 둘 중 하나는 꼭 사용해야 해요. 포스터나 카드뉴스처럼 이미지(.png, .jpg, .gif, .webp) 한 장, 짧은 영상(.mp4, .webm, .mov) 한 편, 또는 문서(.pdf) 한 장이 결과물이라면 그 파일을 그대로 올려도 돼요. 최대 4MB까지 가능해요 — 영상은 대부분 이보다 훨씬 크니, 긴 영상은 유튜브 등에 올리고 실행 링크로 그 주소를 입력해 주세요.",
     launchFileKeepHint: "이미 업로드된 파일이 있어요. 새 파일을 선택하면 기존 파일을 대체해요. 그대로 두려면 비워두세요.",
+    launchFileHtmlOnlyWarning:
+      "HTML 파일 하나만 올렸어요. 이 파일 안에서 이미지나 동영상을 상대경로로 불러온다면(예: <img src=\"photo.png\">) 전시관에서는 보이지 않아요. 이미지나 동영상이 있다면 위의 '📂 폴더 업로드'나 ZIP 파일 업로드를 사용해 주세요.",
     launchFolder: "웹사이트 폴더 업로드",
     launchFolderHint:
       "압축하지 않고 폴더를 통째로 올릴 수 있어요. 웹사이트가 들어있는 폴더를 선택하면 이미지, 동영상 등 안의 모든 파일이 원래 구조 그대로 함께 올라가요. index.html이 있으면 그 파일을 실행 페이지로 사용하고, 없으면 가장 위쪽에 있는 HTML 파일을 사용해요. 전체 용량 합계가 4MB를 넘으면 안 돼요. (일부 모바일 브라우저는 폴더 선택을 지원하지 않을 수 있어요 — 그럴 땐 컴퓨터에서 제출해 주세요.)",
@@ -392,6 +396,8 @@ const en: Dictionary = {
     launchModeUrl: "🔗 Enter a Link",
     launchModeFile: "📁 Upload a File",
     launchModeFolder: "📂 Upload a Folder",
+    launchModeFolderBadge: "Recommended",
+    launchModeNote: "💡 If your website has images or videos, use '📂 Upload a Folder' — uploading just one HTML file means those images or videos won't show up.",
     launchUrl: "Launch Link",
     launchUrlHint: "Paste a link from somewhere you've deployed it, like Replit, Glitch, Netlify, Vercel, v0, bolt.new, or lovable.dev.",
     launchUrlPlaceholder: "https://...",
@@ -399,6 +405,8 @@ const en: Dictionary = {
     launchFileHint:
       "If your project is just one HTML file, upload that (.html). If it uses other files too, like images, zip up the whole folder and upload the .zip instead, or use '📂 Upload a Folder' below to upload it with no zipping at all — if a picture points to a path on your own computer, it won't show up in the gallery, so use one of these if your project has images. If your project is just a single image (.png, .jpg, .gif, .webp), short video (.mp4, .webm, .mov), or document (.pdf), you can upload that file directly. Up to 4MB — most videos are much bigger than that, so for a longer one, upload it to YouTube or similar and use that as your launch link instead.",
     launchFileKeepHint: "A file is already uploaded. Choosing a new one replaces it — leave this blank to keep the current file.",
+    launchFileHtmlOnlyWarning:
+      "You uploaded a single HTML file. If it loads any images or video by a relative path (like <img src=\"photo.png\">), those won't show up in the gallery. If your project uses any, use '📂 Upload a Folder' above or a .zip instead.",
     launchFolder: "Upload Your Website Folder",
     launchFolderHint:
       "Upload the whole folder as-is, no zipping required. Pick the folder your website lives in and every file inside it — images, video, everything — comes along in the same structure. If there's an index.html, that becomes the launch page; otherwise the topmost HTML file is used. The total size can't be over 4MB. (Some mobile browsers don't support picking a folder — submit from a computer if that happens.)",

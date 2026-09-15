@@ -139,6 +139,8 @@ export function ProjectForm({
   const hasExistingUpload = Boolean(project?.uploadedHtml || project?.uploadedFiles);
   const [launchMode, setLaunchMode] = useState<"url" | "file" | "folder">(hasExistingUpload ? "file" : "url");
   const [folderPaths, setFolderPaths] = useState<string[]>([]);
+  const [singleFileName, setSingleFileName] = useState<string | undefined>(undefined);
+  const isHtmlOnlySelected = launchMode === "file" && Boolean(singleFileName && /\.html?$/i.test(singleFileName));
 
   // webkitdirectory/directory aren't in React's known DOM attribute list, so
   // they're set imperatively here rather than as JSX props (which React
@@ -295,7 +297,7 @@ export function ProjectForm({
               *
             </span>
           </span>
-          <div role="radiogroup" aria-label={f.launchMode} className="flex gap-2">
+          <div role="radiogroup" aria-label={f.launchMode} className="flex flex-wrap gap-2">
             {(["url", "file", "folder"] as const).map((m) => (
               <label
                 key={m}
@@ -314,9 +316,15 @@ export function ProjectForm({
                   className="sr-only"
                 />
                 {m === "url" ? f.launchModeUrl : m === "file" ? f.launchModeFile : f.launchModeFolder}
+                {m === "folder" && (
+                  <span className="ml-1.5 inline-flex items-center rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                    {f.launchModeFolderBadge}
+                  </span>
+                )}
               </label>
             ))}
           </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">{f.launchModeNote}</p>
         </div>
 
         {launchMode === "url" ? (
@@ -347,10 +355,20 @@ export function ProjectForm({
               type="file"
               required={!hasExistingUpload}
               accept=".html,.htm,.zip,.png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.webm,.mov,text/html,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/gif,image/webp,application/pdf,video/mp4,video/webm,video/quicktime"
+              onChange={(e) => setSingleFileName(e.target.files?.[0]?.name)}
               aria-invalid={Boolean(errors.launchFile)}
               aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
               className={`${inputClass} file:mr-3 file:rounded-lg file:border-0 file:bg-brand-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white`}
             />
+            {isHtmlOnlySelected && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200"
+              >
+                <span aria-hidden="true">⚠️</span>
+                {f.launchFileHtmlOnlyWarning}
+              </div>
+            )}
           </Field>
         ) : (
           <Field
