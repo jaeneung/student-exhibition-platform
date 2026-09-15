@@ -89,7 +89,7 @@ const ko = {
   submitPage: {
     title: "프로젝트 제출하기",
     intro:
-      "6개 항목만 채우면 1분 안에 제출할 수 있어요. 제출한 프로젝트는 바로 전시되지 않고, 선생님이 검토한 뒤 '전시중' 상태로 바뀌면 방문자에게 공개됩니다. 실명, 학번, 이메일 등 개인정보는 적지 말고 팀 이름이나 별명을 사용해 주세요.",
+      "5개 항목만 채우면 1분 안에 제출할 수 있어요. 제출한 프로젝트는 바로 전시되지 않고, 선생님이 검토한 뒤 '전시중' 상태로 바뀌면 방문자에게 공개됩니다. 실명, 학번, 이메일 등 개인정보는 적지 말고 팀 이름이나 별명을 사용해 주세요.",
     guideLink: "📖 처음이신가요? 제출 가이드 먼저 보기",
     submitLabel: "제출하기",
   },
@@ -229,7 +229,7 @@ const ko = {
       "프로젝트 제목 — 어떤 프로젝트인지 한눈에 알 수 있는 이름",
       "제작자 / 팀 이름 — 실명이 아닌 팀 이름이나 별명 (아래 주의사항 참고)",
       "카테고리 — 웹사이트 / 게임 / 앱 / AI 챗봇 / 인터랙티브 / 기타 중 선택",
-      "한 줄 소개 & 상세 설명 — 무엇을 하는 프로젝트인지 짧게, 자세히",
+      "한 줄 소개 — 무엇을 하는 프로젝트인지 짧게",
       "실행 링크 — 1단계에서 준비한 그 주소",
     ],
     step2Note: "태그, 대표 이미지, 사용한 기술, 만들게 된 계기 같은 항목은 선택 사항이에요. 여유가 있으면 채워보되, 없어도 제출하는 데는 문제없어요.",
@@ -368,7 +368,7 @@ const en: Dictionary = {
   submitPage: {
     title: "Submit a Project",
     intro:
-      "Just 6 fields and under a minute to submit. Your project won't be displayed immediately — once a teacher reviews it and switches it to 'On Display', visitors will be able to see it. Please don't include your real name, student ID, or email — use a team name or nickname instead.",
+      "Just 5 fields and under a minute to submit. Your project won't be displayed immediately — once a teacher reviews it and switches it to 'On Display', visitors will be able to see it. Please don't include your real name, student ID, or email — use a team name or nickname instead.",
     guideLink: "📖 First time here? Read the submission guide",
     submitLabel: "Submit",
   },
@@ -509,7 +509,7 @@ const en: Dictionary = {
       "Project Title — a name that makes it clear what the project is at a glance",
       "Creator / Team Name — a team name or nickname, not your real name (see the notes below)",
       "Category — Website / Game / App / AI Chatbot / Interactive / Other",
-      "Short & Full Description — briefly and then in more detail, what your project does",
+      "Short Description — briefly, what your project does",
       "Launch Link — the address you prepared in step 1",
     ],
     step2Note:
