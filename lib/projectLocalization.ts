@@ -22,7 +22,6 @@ export function localizeProject(project: Project, locale: Locale): Project {
     ...project,
     title: t.title ?? project.title,
     shortDescription: t.shortDescription ?? project.shortDescription,
-    fullDescription: t.fullDescription ?? project.fullDescription,
     creatorName: t.creatorName ?? project.creatorName,
     tags: t.tags ?? project.tags,
     motivation: t.motivation ?? project.motivation,

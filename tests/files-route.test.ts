@@ -19,7 +19,6 @@ afterEach(async () => {
 const baseSubmission: ProjectSubmissionInput = {
   title: "업로드 테스트 프로젝트",
   shortDescription: "파일 업로드 테스트용 짧은 소개입니다.",
-  fullDescription: "파일 업로드 테스트용 상세 설명입니다.",
   creatorName: "테스트 팀",
   category: "웹사이트",
   tags: [],

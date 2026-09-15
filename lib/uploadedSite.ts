@@ -28,7 +28,17 @@ const MIME_BY_EXTENSION: Record<string, string> = {
   mov: "video/quicktime",
   ogv: "video/ogg",
   txt: "text/plain; charset=utf-8",
+  csv: "text/csv; charset=utf-8",
   xml: "application/xml; charset=utf-8",
+  rtf: "application/rtf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  hwp: "application/x-hwp",
+  hwpx: "application/haansofthwpx",
 };
 
 export function contentTypeForPath(path: string): string {

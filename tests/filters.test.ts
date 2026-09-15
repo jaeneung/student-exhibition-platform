@@ -7,7 +7,6 @@ function makeProject(overrides: Partial<Project>): Project {
     id: overrides.id ?? "id",
     title: "샘플 프로젝트",
     shortDescription: "짧은 소개",
-    fullDescription: "상세 설명",
     creatorName: "제작자",
     category: "웹사이트",
     tags: [],

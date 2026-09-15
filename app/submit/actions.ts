@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { getDictionary } from "@/lib/dictionary";
 import {
+  buildSubmittedValues,
   parseFolderPaths,
   readProjectFormData,
   resolveLaunchFields,
@@ -48,6 +49,7 @@ export async function submitProjectAction(
         ...(parsed.success ? {} : zodIssuesToFieldErrors(parsed.error)),
         ...(launch.ok ? {} : launch.errors),
       },
+      values: buildSubmittedValues(raw, formData),
     };
   }
 
@@ -63,12 +65,14 @@ export async function submitProjectAction(
       projectId: project.id,
     };
   } catch (err) {
+    const values = buildSubmittedValues(raw, formData);
     if (err instanceof DuplicateSubmissionError) {
-      return { status: "error", formError: dict.validation.duplicateSubmission };
+      return { status: "error", formError: dict.validation.duplicateSubmission, values };
     }
     return {
       status: "error",
       formError: dict.validation.submitGenericError,
+      values,
     };
   }
 }

@@ -7,7 +7,6 @@ function makeProject(overrides: Partial<Project> = {}): Project {
     id: "id",
     title: "한국어 제목",
     shortDescription: "한국어 짧은 소개",
-    fullDescription: "한국어 상세 설명",
     creatorName: "한국어 제작자",
     category: "웹사이트",
     tags: ["한국어태그"],
@@ -52,7 +51,6 @@ describe("localizeProject", () => {
         en: {
           title: "Title",
           shortDescription: "Short",
-          fullDescription: "Full",
           creatorName: "Creator",
           tags: ["environment"],
           technologies: ["JavaScript"],
@@ -62,7 +60,6 @@ describe("localizeProject", () => {
     const localized = localizeProject(project, "en");
     expect(localized.title).toBe("Title");
     expect(localized.shortDescription).toBe("Short");
-    expect(localized.fullDescription).toBe("Full");
     expect(localized.creatorName).toBe("Creator");
     expect(localized.tags).toEqual(["environment"]);
   });

@@ -9,6 +9,8 @@ const CATEGORY_STYLES: Record<ProjectCategory, { icon: string; gradient: string 
   앱: { icon: "📱", gradient: "from-emerald-400 to-teal-600" },
   "AI 챗봇": { icon: "🤖", gradient: "from-violet-400 to-indigo-600" },
   인터랙티브: { icon: "✨", gradient: "from-amber-400 to-orange-600" },
+  CSA: { icon: "💻", gradient: "from-cyan-400 to-blue-700" },
+  로보틱스: { icon: "🦾", gradient: "from-rose-400 to-red-600" },
   기타: { icon: "📦", gradient: "from-slate-400 to-slate-600" },
 };
 

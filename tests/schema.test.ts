@@ -12,7 +12,6 @@ const managementSchema = getManagementSchema(dict);
 const validSubmission = {
   title: "탄소발자국 계산기",
   shortDescription: "일상 소비 습관으로 하루 탄소 배출량을 계산해요.",
-  fullDescription: "교통, 식사, 전자기기 사용 시간을 입력하면 배출량을 계산합니다.",
   creatorName: "환경지킴이 동아리",
   category: "웹사이트",
   tags: "환경, 웹앱",
@@ -56,7 +55,7 @@ describe("submissionSchema", () => {
     expect(submissionSchema.safeParse({ ...validSubmission, grade: "G6" }).success).toBe(true);
     expect(submissionSchema.safeParse(validSubmission).success).toBe(true);
     expect(submissionSchema.safeParse({ ...validSubmission, grade: "" }).success).toBe(true);
-    expect(submissionSchema.safeParse({ ...validSubmission, grade: "G12" }).success).toBe(false);
+    expect(submissionSchema.safeParse({ ...validSubmission, grade: "G13" }).success).toBe(false);
   });
 });
 

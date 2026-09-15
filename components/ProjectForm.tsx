@@ -131,13 +131,23 @@ export function ProjectForm({
     status: "idle",
   });
   const errors = state.status === "error" ? state.errors ?? {} : {};
+  // Whatever the student last typed, echoed back by the server on a failed
+  // submission (see lib/formAction.ts's SubmittedFormValues) — the
+  // authoritative source for repopulating the form, since without
+  // JavaScript a Server Action submission is a real page reload and
+  // `project` alone (empty, for a new submission) would otherwise silently
+  // discard everything just typed.
+  const errorValues = state.status === "error" ? state.values : undefined;
   // Editing (management) always shows everything already filled in; a brand
   // new submission starts with the optional section collapsed to keep the
   // first view short.
   const isEditing = Boolean(project);
   const f = dict.form;
   const hasExistingUpload = Boolean(project?.uploadedHtml || project?.uploadedFiles);
-  const [launchMode, setLaunchMode] = useState<"url" | "file" | "folder">(hasExistingUpload ? "file" : "url");
+  const [launchMode, setLaunchMode] = useState<"url" | "file" | "folder">(
+    (errorValues?.launchMode as "url" | "file" | "folder" | undefined) ??
+      (hasExistingUpload ? "file" : "url")
+  );
   const [folderPaths, setFolderPaths] = useState<string[]>([]);
   const [singleFileName, setSingleFileName] = useState<string | undefined>(undefined);
   const isHtmlOnlySelected = launchMode === "file" && Boolean(singleFileName && /\.html?$/i.test(singleFileName));
@@ -200,7 +210,7 @@ export function ProjectForm({
             name="title"
             type="text"
             required
-            defaultValue={project?.title}
+            defaultValue={errorValues?.title ?? project?.title}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
             className={inputClass}
@@ -214,7 +224,7 @@ export function ProjectForm({
             name="creatorName"
             type="text"
             required
-            defaultValue={project?.creatorName}
+            defaultValue={errorValues?.creatorName ?? project?.creatorName}
             aria-invalid={Boolean(errors.creatorName)}
             aria-describedby={errors.creatorName ? "creatorName-error" : undefined}
             className={inputClass}
@@ -227,7 +237,7 @@ export function ProjectForm({
             id="category"
             name="category"
             required
-            defaultValue={project?.category ?? ""}
+            defaultValue={errorValues?.category || project?.category || ""}
             aria-invalid={Boolean(errors.category)}
             aria-describedby={errors.category ? "category-error" : undefined}
             className={inputClass}
@@ -247,7 +257,7 @@ export function ProjectForm({
           <select
             id="grade"
             name="grade"
-            defaultValue={project?.grade ?? ""}
+            defaultValue={errorValues?.grade || project?.grade || ""}
             aria-invalid={Boolean(errors.grade)}
             aria-describedby={errors.grade ? "grade-error" : undefined}
             className={inputClass}
@@ -268,25 +278,11 @@ export function ProjectForm({
             required
             rows={2}
             maxLength={200}
-            defaultValue={project?.shortDescription}
+            defaultValue={errorValues?.shortDescription ?? project?.shortDescription}
             aria-invalid={Boolean(errors.shortDescription)}
             aria-describedby={errors.shortDescription ? "shortDescription-error" : undefined}
             className={inputClass}
             placeholder={f.shortDescriptionPlaceholder}
-          />
-        </Field>
-
-        <Field id="fullDescription" label={f.fullDescription} required error={errors.fullDescription}>
-          <textarea
-            id="fullDescription"
-            name="fullDescription"
-            required
-            rows={4}
-            defaultValue={project?.fullDescription}
-            aria-invalid={Boolean(errors.fullDescription)}
-            aria-describedby={errors.fullDescription ? "fullDescription-error" : undefined}
-            className={inputClass}
-            placeholder={f.fullDescriptionPlaceholder}
           />
         </Field>
 
@@ -334,7 +330,7 @@ export function ProjectForm({
               name="launchUrl"
               type="url"
               required
-              defaultValue={hasExistingUpload ? undefined : project?.launchUrl}
+              defaultValue={errorValues?.launchUrl || (hasExistingUpload ? undefined : project?.launchUrl)}
               aria-invalid={Boolean(errors.launchUrl)}
               aria-describedby={errors.launchUrl ? "launchUrl-error" : "launchUrl-hint"}
               className={inputClass}
@@ -354,7 +350,7 @@ export function ProjectForm({
               name="launchFile"
               type="file"
               required={!hasExistingUpload}
-              accept=".html,.htm,.zip,.png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.webm,.mov,text/html,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/gif,image/webp,application/pdf,video/mp4,video/webm,video/quicktime"
+              accept=".html,.htm,.zip,.png,.jpg,.jpeg,.gif,.webp,.pdf,.mp4,.webm,.mov,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.hwp,.hwpx,.csv,.txt,.rtf,text/html,application/zip,application/x-zip-compressed,image/png,image/jpeg,image/gif,image/webp,application/pdf,video/mp4,video/webm,video/quicktime"
               onChange={(e) => setSingleFileName(e.target.files?.[0]?.name)}
               aria-invalid={Boolean(errors.launchFile)}
               aria-describedby={errors.launchFile ? "launchFile-error" : "launchFile-hint"}
@@ -404,7 +400,7 @@ export function ProjectForm({
             id="handsOnAvailable"
             name="handsOnAvailable"
             type="checkbox"
-            defaultChecked={project?.handsOnAvailable ?? true}
+            defaultChecked={errorValues?.handsOnAvailable ?? project?.handsOnAvailable ?? true}
             className="h-5 w-5 rounded border-zinc-300 text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
           />
           <label htmlFor="handsOnAvailable" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -419,7 +415,7 @@ export function ProjectForm({
             id="tags"
             name="tags"
             type="text"
-            defaultValue={project?.tags.join(", ")}
+            defaultValue={errorValues?.tags ?? project?.tags.join(", ")}
             className={inputClass}
             placeholder={f.tagsPlaceholder}
           />
@@ -435,7 +431,7 @@ export function ProjectForm({
             id="coverImageUrl"
             name="coverImageUrl"
             type="url"
-            defaultValue={project?.coverImageUrl}
+            defaultValue={errorValues?.coverImageUrl ?? project?.coverImageUrl}
             aria-invalid={Boolean(errors.coverImageUrl)}
             aria-describedby={errors.coverImageUrl ? "coverImageUrl-error" : "coverImageUrl-hint"}
             className={inputClass}
@@ -448,7 +444,7 @@ export function ProjectForm({
             id="technologies"
             name="technologies"
             type="text"
-            defaultValue={project?.technologies.join(", ")}
+            defaultValue={errorValues?.technologies ?? project?.technologies.join(", ")}
             className={inputClass}
             placeholder={f.technologiesPlaceholder}
           />
@@ -459,7 +455,7 @@ export function ProjectForm({
             id="motivation"
             name="motivation"
             rows={3}
-            defaultValue={project?.motivation}
+            defaultValue={errorValues?.motivation ?? project?.motivation}
             className={inputClass}
           />
         </Field>
@@ -469,7 +465,7 @@ export function ProjectForm({
             id="usageInstructions"
             name="usageInstructions"
             rows={3}
-            defaultValue={project?.usageInstructions}
+            defaultValue={errorValues?.usageInstructions ?? project?.usageInstructions}
             className={inputClass}
           />
         </Field>
@@ -479,7 +475,7 @@ export function ProjectForm({
             id="safetyNotes"
             name="safetyNotes"
             rows={2}
-            defaultValue={project?.safetyNotes}
+            defaultValue={errorValues?.safetyNotes ?? project?.safetyNotes}
             className={inputClass}
           />
         </Field>
@@ -492,7 +488,11 @@ export function ProjectForm({
               id="status"
               name="status"
               required
-              defaultValue={project?.status ?? ("pending_review" as ExhibitionStatus)}
+              defaultValue={
+                (errorValues?.status as ExhibitionStatus | undefined) ||
+                project?.status ||
+                ("pending_review" as ExhibitionStatus)
+              }
               className={inputClass}
             >
               {EXHIBITION_STATUSES.map((s) => (

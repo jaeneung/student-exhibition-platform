@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME, requireTeacherSession } from "@/lib/auth";
 import { getDictionary } from "@/lib/dictionary";
 import {
+  buildSubmittedValues,
   managementValuesToProjectFields,
   parseFolderPaths,
   readProjectFormData,
@@ -29,7 +30,6 @@ function toUpdateInput(project: Project): ProjectUpdateInput {
   return {
     title: project.title,
     shortDescription: project.shortDescription,
-    fullDescription: project.fullDescription,
     creatorName: project.creatorName,
     category: project.category,
     grade: project.grade,
@@ -99,12 +99,17 @@ export async function updateProjectAction(
         ...(parsed.success ? {} : zodIssuesToFieldErrors(parsed.error)),
         ...(launch.ok ? {} : launch.errors),
       },
+      values: buildSubmittedValues(raw, formData),
     };
   }
 
   const updated = await updateProject(id, managementValuesToProjectFields(parsed.data, launch.value));
   if (!updated) {
-    return { status: "error", formError: dict.validation.editNotFound };
+    return {
+      status: "error",
+      formError: dict.validation.editNotFound,
+      values: buildSubmittedValues(raw, formData),
+    };
   }
 
   revalidatePath("/manage");

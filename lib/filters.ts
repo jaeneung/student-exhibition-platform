@@ -21,9 +21,7 @@ export function filterPublicProjects(
     .filter((project) => {
       if (!q) return true;
       return (
-        project.title.toLowerCase().includes(q) ||
-        project.shortDescription.toLowerCase().includes(q) ||
-        project.fullDescription.toLowerCase().includes(q)
+        project.title.toLowerCase().includes(q) || project.shortDescription.toLowerCase().includes(q)
       );
     })
     .filter((project) => !category || project.category === category)

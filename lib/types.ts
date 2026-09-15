@@ -12,12 +12,14 @@ export const PROJECT_CATEGORIES = [
   "앱",
   "AI 챗봇",
   "인터랙티브",
+  "CSA",
+  "로보틱스",
   "기타",
 ] as const;
 
 export type ProjectCategory = (typeof PROJECT_CATEGORIES)[number];
 
-export const PROJECT_GRADES = ["G6", "G7", "G8", "G9"] as const;
+export const PROJECT_GRADES = ["G6", "G7", "G8", "G9", "G10", "G11", "G12"] as const;
 
 export type ProjectGrade = (typeof PROJECT_GRADES)[number];
 
@@ -30,7 +32,6 @@ export type ProjectGrade = (typeof PROJECT_GRADES)[number];
 export interface ProjectTranslation {
   title?: string;
   shortDescription?: string;
-  fullDescription?: string;
   creatorName?: string;
   tags?: string[];
   motivation?: string;
@@ -52,7 +53,6 @@ export interface Project {
   id: string;
   title: string;
   shortDescription: string;
-  fullDescription: string;
   creatorName: string;
   category: string;
   /** Which grade level's project this is (G6–G9). Optional: existing

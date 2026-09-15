@@ -97,9 +97,6 @@ export default async function ProjectDetailPage({
 
       <div className="mx-auto grid w-full max-w-5xl flex-1 grid-cols-1 gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[1fr_320px]">
         <div className="flex flex-col gap-4 lg:order-1">
-          <DetailSection icon="📝" title={dict.detail.fullDescription}>
-            {project.fullDescription}
-          </DetailSection>
           {project.motivation && (
             <DetailSection icon="💡" title={dict.detail.motivation}>
               {project.motivation}

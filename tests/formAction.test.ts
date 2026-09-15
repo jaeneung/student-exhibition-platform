@@ -147,11 +147,31 @@ describe("resolveLaunchFields — file mode", () => {
     if (!result.ok) expect(result.errors.launchFile).toBeDefined();
   });
 
-  it("rejects a file type that isn't HTML, ZIP, image, or PDF", async () => {
+  it("accepts a generic document file (Word) as a single-file upload", async () => {
     const result = await resolveLaunchFields({
       mode: "file",
       url: "",
-      file: htmlFile("not html", "notes.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+      file: htmlFile("not html", "report.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+      coverImageUrl: "",
+      id,
+      origin,
+      dict,
+    });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.launchUrl).toBe(`${origin}/files/${id}`);
+      expect(result.value.entryPath).toBe("report.docx");
+      expect(result.value.uploadedFiles?.["report.docx"].contentType).toBe(
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      );
+    }
+  });
+
+  it("rejects an SVG uploaded as a plain file even without the image/svg+xml MIME type", async () => {
+    const result = await resolveLaunchFields({
+      mode: "file",
+      url: "",
+      file: htmlFile("<svg></svg>", "icon2.svg", "application/octet-stream"),
       coverImageUrl: "",
       id,
       origin,

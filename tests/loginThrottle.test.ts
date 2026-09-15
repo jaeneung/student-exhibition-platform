@@ -26,7 +26,7 @@ describe("checkThrottle / recordFailedAttempt", () => {
 
   it("stays unthrottled below the max attempt count", async () => {
     const ip = freshIp();
-    for (let i = 0; i < 4; i += 1) {
+    for (let i = 0; i < 2; i += 1) {
       await recordFailedAttempt(ip);
     }
     expect(await checkThrottle(ip)).toEqual({ throttled: false });
@@ -34,7 +34,7 @@ describe("checkThrottle / recordFailedAttempt", () => {
 
   it("throttles once the max attempt count is reached", async () => {
     const ip = freshIp();
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       await recordFailedAttempt(ip);
     }
     const result = await checkThrottle(ip);
@@ -44,7 +44,7 @@ describe("checkThrottle / recordFailedAttempt", () => {
 
   it("resetAttempts clears a throttled IP back to unthrottled", async () => {
     const ip = freshIp();
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       await recordFailedAttempt(ip);
     }
     expect((await checkThrottle(ip)).throttled).toBe(true);
@@ -55,7 +55,7 @@ describe("checkThrottle / recordFailedAttempt", () => {
   it("tracks separate IPs independently", async () => {
     const ipA = freshIp();
     const ipB = freshIp();
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       await recordFailedAttempt(ipA);
     }
     expect((await checkThrottle(ipA)).throttled).toBe(true);
@@ -64,13 +64,13 @@ describe("checkThrottle / recordFailedAttempt", () => {
 
   it("treats an expired window as reset, starting the count over", async () => {
     const ip = freshIp();
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 3; i += 1) {
       await recordFailedAttempt(ip);
     }
     expect((await checkThrottle(ip)).throttled).toBe(true);
 
     const realNow = Date.now;
-    vi.spyOn(Date, "now").mockImplementation(() => realNow() + 16 * 60 * 1000);
+    vi.spyOn(Date, "now").mockImplementation(() => realNow() + 31 * 60 * 1000);
     try {
       expect((await checkThrottle(ip)).throttled).toBe(false);
       await recordFailedAttempt(ip);

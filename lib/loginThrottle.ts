@@ -16,8 +16,11 @@ import { isNetlifyRuntime } from "./runtime";
  * guess expensive — see lib/auth.ts.
  */
 const BLOB_STORE_NAME = "exhibition-auth";
-const MAX_ATTEMPTS = 5;
-const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+// Tightened from 5/15min: a shared single-account login is worth making
+// brute-forcing as impractical as possible even at some cost to a
+// legitimate teacher who mistypes a few times.
+const MAX_ATTEMPTS = 3;
+const WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 
 interface ThrottleRecord {
   count: number;

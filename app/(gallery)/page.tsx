@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryFilterPills } from "@/components/CategoryFilterPills";
 import { EmptyState } from "@/components/EmptyState";
 import { ProjectCard } from "@/components/ProjectCard";
 import { QrCode } from "@/components/QrCode";
@@ -74,6 +75,8 @@ export default async function GalleryPage({
       </section>
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+        <CategoryFilterPills dict={dict} categories={categories} active={category} />
+
         <SearchFilterBar
           dict={dict}
           q={q}

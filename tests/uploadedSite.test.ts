@@ -20,6 +20,20 @@ describe("contentTypeForPath", () => {
   it("falls back to a generic binary type for unknown extensions", () => {
     expect(contentTypeForPath("data.unknownext")).toBe("application/octet-stream");
   });
+
+  it("maps common document formats (Word/Excel/PowerPoint/HWP/CSV)", () => {
+    expect(contentTypeForPath("report.docx")).toBe(
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    expect(contentTypeForPath("sheet.xlsx")).toBe(
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    expect(contentTypeForPath("slides.pptx")).toBe(
+      "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    );
+    expect(contentTypeForPath("문서.hwp")).toBe("application/x-hwp");
+    expect(contentTypeForPath("data.csv")).toContain("text/csv");
+  });
 });
 
 describe("extractZipSite", () => {

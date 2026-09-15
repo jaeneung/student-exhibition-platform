@@ -14,10 +14,49 @@ import { isValidLaunchUrl } from "./validation";
 
 export type FormFieldErrors = Record<string, string>;
 
+/** Everything the student typed, minus file inputs (browsers refuse to
+ * pre-fill those for security, regardless of what a server sends back).
+ * Echoed back from a failed submission so the form can repopulate itself —
+ * necessary not just for convenience but for correctness: without
+ * JavaScript, a Server Action submission is a real page reload, and without
+ * this the reloaded page would only ever show `project`'s original values
+ * (empty, for a new submission), silently discarding everything typed. */
+export interface SubmittedFormValues {
+  title: string;
+  shortDescription: string;
+  creatorName: string;
+  category: string;
+  grade: string;
+  tags: string;
+  coverImageUrl: string;
+  motivation: string;
+  usageInstructions: string;
+  safetyNotes: string;
+  technologies: string;
+  handsOnAvailable: boolean;
+  status: string;
+  launchMode: string;
+  launchUrl: string;
+}
+
 export type FormActionState =
   | { status: "idle" }
-  | { status: "error"; errors?: FormFieldErrors; formError?: string }
+  | { status: "error"; errors?: FormFieldErrors; formError?: string; values?: SubmittedFormValues }
   | { status: "success"; message: string; projectId?: string };
+
+/** Builds the SubmittedFormValues snapshot to echo back on a failed
+ * submission (see readProjectFormData for why launchMode/launchUrl are read
+ * separately from the rest of the fields). */
+export function buildSubmittedValues(
+  raw: ReturnType<typeof readProjectFormData>,
+  formData: FormData
+): SubmittedFormValues {
+  return {
+    ...raw,
+    launchMode: formData.get("launchMode")?.toString() ?? "url",
+    launchUrl: formData.get("launchUrl")?.toString() ?? "",
+  };
+}
 
 /** Reads the field names shared by both the submission and management forms
  * out of a submitted FormData, as plain strings ready for zod validation.
@@ -28,7 +67,6 @@ export function readProjectFormData(formData: FormData) {
   return {
     title: formData.get("title")?.toString() ?? "",
     shortDescription: formData.get("shortDescription")?.toString() ?? "",
-    fullDescription: formData.get("fullDescription")?.toString() ?? "",
     creatorName: formData.get("creatorName")?.toString() ?? "",
     category: formData.get("category")?.toString() ?? "",
     grade: formData.get("grade")?.toString() ?? "",
@@ -129,17 +167,24 @@ function looksLikeVideo(file: File): boolean {
   return VIDEO_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(`.${ext}`));
 }
 
+function looksLikeSvg(file: File): boolean {
+  return file.type === "image/svg+xml" || /\.svg$/i.test(file.name);
+}
+
 /**
  * Validates and resolves the "how do visitors launch this" side of the form —
  * either a plain URL, or an uploaded file that this app hosts itself at
  * /files/{id} (see app/files/[id]/[[...path]]/route.ts): a single .html file
  * with no other assets, a .zip or a browser-picked folder when the project
  * needs images/CSS/JS alongside its HTML (see lib/uploadedSite.ts for why a
- * lone .html file can't support those), or a single image/video/PDF file
- * for a project that's just a poster, video, or document rather than an
- * interactive page. Kept out of the zod schema in schema.ts because it's
- * genuinely conditional (which field even applies depends on `mode`) and
- * involves async file reads, not just sync field rules.
+ * lone .html file can't support those), or — for a project that's really
+ * just a poster, video, or document rather than an interactive page — a
+ * single arbitrary file (image, video, PDF, Word/Excel/PowerPoint/HWP, CSV,
+ * plain text, or almost anything else; only .svg is refused, since unlike
+ * these it can embed <script> the same way HTML can). Kept out of the zod
+ * schema in schema.ts because it's genuinely conditional (which field even
+ * applies depends on `mode`) and involves async file reads, not just sync
+ * field rules.
  *
  * Also fills in coverImageUrl automatically when the visitor left it blank,
  * regardless of mode — from the resolved launch URL via a screenshot service
@@ -297,11 +342,34 @@ export async function resolveLaunchFields({
       return result;
     }
 
-    if (!looksLikeHtml(file)) {
+    if (looksLikeHtml(file)) {
+      return finalizeLaunch(
+        { launchUrl: `${origin}/files/${id}`, uploadedHtml: await file.text() },
+        coverImageUrl,
+        dict
+      );
+    }
+
+    // SVG is the one type still refused outright here (see the comment on
+    // looksLikeImage above) — everything else (Word, Excel, PowerPoint,
+    // 한글/HWP, CSV, plain text, and any other single file a student's
+    // result might be) is accepted generically below, served as-is at
+    // /files/{id} with its own content-type. There's no sensible automatic
+    // thumbnail for most of these, so — unlike an image — they don't get
+    // the "use the file itself as the cover" treatment.
+    if (looksLikeSvg(file)) {
       return { ok: false, errors: { launchFile: dict.validation.launchFileInvalidType } };
     }
+
+    const contentBase64 = Buffer.from(await file.arrayBuffer()).toString("base64");
     return finalizeLaunch(
-      { launchUrl: `${origin}/files/${id}`, uploadedHtml: await file.text() },
+      {
+        launchUrl: `${origin}/files/${id}`,
+        uploadedFiles: {
+          [file.name]: { contentBase64, contentType: contentTypeForPath(file.name) },
+        },
+        entryPath: file.name,
+      },
       coverImageUrl,
       dict
     );
@@ -343,7 +411,6 @@ export function submissionValuesToProjectFields(
   return {
     title: values.title,
     shortDescription: values.shortDescription,
-    fullDescription: values.fullDescription,
     creatorName: values.creatorName,
     category: values.category,
     grade: (values.grade || undefined) as ProjectGrade | undefined,

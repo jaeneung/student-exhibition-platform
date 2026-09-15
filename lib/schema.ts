@@ -30,7 +30,6 @@ function buildBaseProjectFields(v: Dictionary["validation"]) {
   return {
     title: z.string().trim().min(2, v.titleMin).max(120, v.titleMax),
     shortDescription: z.string().trim().min(10, v.shortDescriptionMin).max(200, v.shortDescriptionMax),
-    fullDescription: z.string().trim().min(10, v.fullDescriptionMin).max(4000, v.fullDescriptionMax),
     creatorName: z.string().trim().min(1, v.creatorNameMin).max(80, v.creatorNameMax),
     category: z.string().trim().min(1, v.categoryRequired),
     grade: z

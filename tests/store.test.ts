@@ -20,7 +20,6 @@ afterEach(async () => {
 const baseSubmission: ProjectSubmissionInput = {
   title: "테스트 프로젝트",
   shortDescription: "테스트용 짧은 소개입니다.",
-  fullDescription: "테스트용 상세 설명입니다.",
   creatorName: "테스트 팀",
   category: "웹사이트",
   tags: ["테스트"],
