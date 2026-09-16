@@ -30,17 +30,34 @@ export async function submitProjectAction(
   // before the launch fields can be resolved, not after.
   const id = randomUUID();
   const fileEntry = formData.get("launchFile");
-  const launch = await resolveLaunchFields({
-    mode: formData.get("launchMode")?.toString() ?? "url",
-    url: formData.get("launchUrl")?.toString() ?? "",
-    file: fileEntry instanceof File ? fileEntry : null,
-    folderFiles: formData.getAll("launchFolderFiles").filter((v): v is File => v instanceof File),
-    folderPaths: parseFolderPaths(formData.get("launchFolderPaths")),
-    coverImageUrl: raw.coverImageUrl,
-    id,
-    origin: await getRequestOrigin(),
-    dict,
-  });
+  let launch: Awaited<ReturnType<typeof resolveLaunchFields>>;
+  try {
+    launch = await resolveLaunchFields({
+      mode: formData.get("launchMode")?.toString() ?? "url",
+      url: formData.get("launchUrl")?.toString() ?? "",
+      file: fileEntry instanceof File ? fileEntry : null,
+      folderFiles: formData.getAll("launchFolderFiles").filter((v): v is File => v instanceof File),
+      folderPaths: parseFolderPaths(formData.get("launchFolderPaths")),
+      coverImageUrl: raw.coverImageUrl,
+      id,
+      origin: await getRequestOrigin(),
+      dict,
+    });
+  } catch {
+    // Anything unexpected while reading/processing the uploaded file (a
+    // corrupt archive JSZip couldn't even open, a truncated multipart body,
+    // etc.) would otherwise propagate out of this Server Action and hit the
+    // generic global error boundary (app/error.tsx) — a page-level "problem
+    // loading this page" message that says nothing about the file and loses
+    // every other field the student already typed. Catching it here keeps
+    // them on the form with a file-specific message and their other answers
+    // intact (buildSubmittedValues below).
+    return {
+      status: "error",
+      errors: { launchFile: dict.validation.launchFileUploadFailed },
+      values: buildSubmittedValues(raw, formData),
+    };
+  }
 
   if (!parsed.success || !launch.ok) {
     return {

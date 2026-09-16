@@ -72,25 +72,38 @@ export async function updateProjectAction(
   const existingProject = await getProjectByIdForManagement(id);
 
   const fileEntry = formData.get("launchFile");
-  const launch = await resolveLaunchFields({
-    mode: formData.get("launchMode")?.toString() ?? "url",
-    url: formData.get("launchUrl")?.toString() ?? "",
-    file: fileEntry instanceof File ? fileEntry : null,
-    folderFiles: formData.getAll("launchFolderFiles").filter((v): v is File => v instanceof File),
-    folderPaths: parseFolderPaths(formData.get("launchFolderPaths")),
-    coverImageUrl: raw.coverImageUrl,
-    id,
-    origin: await getRequestOrigin(),
-    dict,
-    existing: existingProject
-      ? {
-          launchUrl: existingProject.launchUrl,
-          uploadedHtml: existingProject.uploadedHtml,
-          uploadedFiles: existingProject.uploadedFiles,
-          entryPath: existingProject.entryPath,
-        }
-      : undefined,
-  });
+  let launch: Awaited<ReturnType<typeof resolveLaunchFields>>;
+  try {
+    launch = await resolveLaunchFields({
+      mode: formData.get("launchMode")?.toString() ?? "url",
+      url: formData.get("launchUrl")?.toString() ?? "",
+      file: fileEntry instanceof File ? fileEntry : null,
+      folderFiles: formData.getAll("launchFolderFiles").filter((v): v is File => v instanceof File),
+      folderPaths: parseFolderPaths(formData.get("launchFolderPaths")),
+      coverImageUrl: raw.coverImageUrl,
+      id,
+      origin: await getRequestOrigin(),
+      dict,
+      existing: existingProject
+        ? {
+            launchUrl: existingProject.launchUrl,
+            uploadedHtml: existingProject.uploadedHtml,
+            uploadedFiles: existingProject.uploadedFiles,
+            entryPath: existingProject.entryPath,
+          }
+        : undefined,
+    });
+  } catch {
+    // See app/submit/actions.ts's identical guard: without this, an
+    // unexpected file-processing failure would crash out to the generic
+    // global error boundary instead of a clear, file-specific message that
+    // keeps the teacher's other edits intact.
+    return {
+      status: "error",
+      errors: { launchFile: dict.validation.launchFileUploadFailed },
+      values: buildSubmittedValues(raw, formData),
+    };
+  }
 
   if (!parsed.success || !launch.ok) {
     return {

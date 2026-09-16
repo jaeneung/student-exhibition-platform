@@ -28,6 +28,46 @@ function guessRelayContentType(filename: string): string {
   return "video/mp4";
 }
 
+/** Distinguishes *why* a media-relay request failed, so the student sees a
+ * message that actually matches what went wrong instead of one generic
+ * "something failed" for every case — a dropped connection, a file the
+ * server refuses (too large or a type it doesn't relay), and everything
+ * else all call for different next steps. */
+class RelayError extends Error {
+  constructor(public reason: "network" | "too_large" | "unsupported_type" | "server") {
+    super(reason);
+  }
+}
+
+/** Reads the JSON error code app/api/media-upload/{chunk,finalize}/route.ts
+ * return on failure and turns it into the matching RelayError reason. */
+async function relayErrorFromResponse(res: Response): Promise<RelayError> {
+  if (res.status === 413) return new RelayError("too_large");
+  const body: { error?: string } | null = await res.json().catch(() => null);
+  if (body?.error === "too_large" || body?.error === "invalid_chunk_size") {
+    return new RelayError("too_large");
+  }
+  if (body?.error === "unsupported_type" || body?.error === "not_a_video") {
+    return new RelayError("unsupported_type");
+  }
+  return new RelayError("server");
+}
+
+/** A fetch() that failed to even reach the server (offline, DNS, dropped
+ * connection mid-upload) throws a plain TypeError rather than resolving
+ * with a non-ok Response — caught here and normalized into the same
+ * RelayError shape everything else in relayFileToGithub uses. */
+async function relayFetch(input: string, init: RequestInit): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(input, init);
+  } catch {
+    throw new RelayError("network");
+  }
+  if (!res.ok) throw await relayErrorFromResponse(res);
+  return res;
+}
+
 /** A folder-picker <input> reports each file's location within the chosen
  * folder via the nonstandard but universally-supported `webkitRelativePath`
  * property — not a typed DOM property, so read it defensively. */
@@ -220,17 +260,16 @@ export function ProjectForm({
       for (let index = 0; index < totalChunks; index += 1) {
         const start = index * MEDIA_UPLOAD_CHUNK_BYTES;
         const chunk = file.slice(start, start + MEDIA_UPLOAD_CHUNK_BYTES);
-        const res = await fetch(
+        await relayFetch(
           `/api/media-upload/chunk?uploadId=${uploadId}&index=${index}&total=${totalChunks}`,
           { method: "POST", body: chunk }
         );
-        if (!res.ok) throw new Error("chunk upload failed");
         // The last 10% is reserved for the finalize/relay step, which has
         // no per-chunk progress of its own to report.
         setMediaRelay({ status: "uploading", progress: Math.round(((index + 1) / totalChunks) * 90) });
       }
 
-      const finalizeRes = await fetch("/api/media-upload/finalize", {
+      const finalizeRes = await relayFetch("/api/media-upload/finalize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -240,15 +279,23 @@ export function ProjectForm({
           contentType: file.type || guessRelayContentType(file.name),
         }),
       });
-      if (!finalizeRes.ok) throw new Error("finalize failed");
       const data = (await finalizeRes.json()) as { url: string };
 
       setMediaRelay(undefined);
       setLaunchUrlValue(data.url);
       setLaunchMode("url");
       setRelaySucceeded(true);
-    } catch {
-      setMediaRelay({ status: "error", message: f.mediaRelayError });
+    } catch (err) {
+      const reason = err instanceof RelayError ? err.reason : "server";
+      const message =
+        reason === "network"
+          ? f.mediaRelayNetworkError
+          : reason === "too_large"
+            ? format(f.mediaRelayTooLarge, { max: formatMb(MAX_GITHUB_RELAY_BYTES) })
+            : reason === "unsupported_type"
+              ? f.mediaRelayUnsupportedType
+              : f.mediaRelayError;
+      setMediaRelay({ status: "error", message });
     }
   }
 

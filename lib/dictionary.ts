@@ -130,6 +130,11 @@ const ko = {
     mediaRelaySuccess: "파일이 자동으로 업로드되어 이 링크가 채워졌어요. 그대로 제출하시면 돼요.",
     mediaRelayError:
       "자동 업로드에 실패했어요. 잠시 후 다시 시도하거나, 동영상이라면 유튜브 등에, 문서라면 구글 드라이브 등에 올린 뒤 '🔗 링크 입력'으로 그 주소를 제출해 주세요.",
+    mediaRelayNetworkError:
+      "인터넷 연결 문제로 자동 업로드에 실패했어요. Wi-Fi 연결을 확인하고 다시 시도해 주세요.",
+    mediaRelayTooLarge: "파일이 너무 커요(최대 {max}MB) — 더 작은 파일을 선택하거나 '🔗 링크 입력'을 이용해 주세요.",
+    mediaRelayUnsupportedType:
+      "이 파일 형식은 자동 업로드를 지원하지 않아요. 동영상이나 PDF만 가능해요.",
     launchFolder: "웹사이트 폴더 업로드",
     launchFolderHint:
       "압축하지 않고 폴더를 통째로 올릴 수 있어요. 웹사이트가 들어있는 폴더를 선택하면 이미지, 동영상 등 안의 모든 파일이 원래 구조 그대로 함께 올라가요. index.html이 있으면 그 파일을 실행 페이지로 사용하고, 없으면 가장 위쪽에 있는 HTML 파일을 사용해요. 전체 용량 합계가 4MB를 넘으면 안 돼요. (일부 모바일 브라우저는 폴더 선택을 지원하지 않을 수 있어요 — 그럴 땐 컴퓨터에서 제출해 주세요.)",
@@ -285,6 +290,8 @@ const ko = {
     launchFileZipInvalid: "ZIP 파일을 열 수 없어요. 파일이 손상되지 않았는지 확인해 주세요.",
     launchFileZipEmpty: "ZIP 파일 안에 내용이 없어요.",
     launchFileZipNoHtml: "ZIP 파일 안에 HTML 파일이 없어요.",
+    launchFileUploadFailed:
+      "파일을 업로드하는 중 문제가 발생했어요. 다시 시도해 주세요. 계속 실패한다면 파일이 손상되지 않았는지 확인하거나, 더 작은 파일 또는 링크 입력으로 제출해 보세요.",
     duplicateSubmission: "이미 같은 내용으로 최근에 제출된 프로젝트가 있습니다.",
     submitSuccess: "프로젝트가 제출되었습니다! 선생님이 검토한 뒤 '전시중' 상태로 바뀌면 방문자에게 공개됩니다.",
     submitGenericError: "제출 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.",
@@ -425,6 +432,10 @@ const en: Dictionary = {
     mediaRelaySuccess: "Your file was uploaded automatically and this link was filled in — you can submit as-is.",
     mediaRelayError:
       "Automatic upload failed. Try again shortly, or upload it elsewhere (YouTube for video, Google Drive for documents) and submit that link instead using '🔗 Enter a Link'.",
+    mediaRelayNetworkError:
+      "Automatic upload failed because of a connection problem. Please check your internet connection and try again.",
+    mediaRelayTooLarge: "The file is too big (max {max}MB) — choose a smaller file, or use '🔗 Enter a Link' instead.",
+    mediaRelayUnsupportedType: "This file type isn't supported for automatic upload — only video and PDF are.",
     launchFolder: "Upload Your Website Folder",
     launchFolderHint:
       "Upload the whole folder as-is, no zipping required. Pick the folder your website lives in and every file inside it — images, video, everything — comes along in the same structure. If there's an index.html, that becomes the launch page; otherwise the topmost HTML file is used. The total size can't be over 4MB. (Some mobile browsers don't support picking a folder — submit from a computer if that happens.)",
@@ -582,6 +593,8 @@ const en: Dictionary = {
     launchFileZipInvalid: "Couldn't open the ZIP file — please check it isn't corrupted.",
     launchFileZipEmpty: "The ZIP file doesn't contain anything.",
     launchFileZipNoHtml: "The ZIP file doesn't contain an HTML file.",
+    launchFileUploadFailed:
+      "Something went wrong while uploading your file. Please try again. If it keeps failing, check that the file isn't corrupted, or try a smaller file or a link instead.",
     duplicateSubmission: "A project with the same details was already submitted recently.",
     submitSuccess:
       "Your project has been submitted! Once a teacher reviews it and switches it to 'On Display', visitors will be able to see it.",
