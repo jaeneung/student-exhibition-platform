@@ -204,3 +204,19 @@ export async function updateProject(
   await writeAll(next);
   return updated;
 }
+
+/** Permanently removes the given projects. Returns the number actually
+ * deleted (ids that don't exist are silently ignored). No confirmation or
+ * status restriction happens here — callers (the /manage delete action) are
+ * responsible for restricting this to the intended status/selection. */
+export async function deleteProjects(ids: string[]): Promise<number> {
+  if (ids.length === 0) return 0;
+  const idSet = new Set(ids);
+  const all = await readAll();
+  const next = all.filter((p) => !idSet.has(p.id));
+  const deletedCount = all.length - next.length;
+  if (deletedCount > 0) {
+    await writeAll(next);
+  }
+  return deletedCount;
+}

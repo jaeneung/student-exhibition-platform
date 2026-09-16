@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
+import { ManagePrivateSection } from "@/components/ManagePrivateSection";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getTeacherUsername, hasValidTeacherSession } from "@/lib/auth";
 import { getCategoryStyle } from "@/lib/categoryStyles";
@@ -11,7 +12,9 @@ import { getAllProjects } from "@/lib/store";
 import { EXHIBITION_STATUSES, type ExhibitionStatus } from "@/lib/types";
 import { changeStatusAction, logoutAction } from "../actions";
 
-const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display", "private"];
+// "private" is rendered separately below via ManagePrivateSection (collapsible,
+// bulk-select + delete) rather than through this generic loop.
+const STATUS_ORDER: ExhibitionStatus[] = ["pending_review", "on_display"];
 
 // Without this, Next.js's automatic static optimization prerenders this page
 // once at build time (it has no searchParams/dynamic params to hint otherwise)
@@ -138,6 +141,12 @@ export default async function ManagePage() {
           );
         })
       )}
+
+      {(() => {
+        const privateProjects = projects.filter((p) => p.status === "private");
+        if (privateProjects.length === 0) return null;
+        return <ManagePrivateSection projects={privateProjects} dict={dict} />;
+      })()}
     </div>
   );
 }

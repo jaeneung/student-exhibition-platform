@@ -134,3 +134,34 @@ describe("updateProject", () => {
     expect(result).toBeUndefined();
   });
 });
+
+describe("deleteProjects", () => {
+  it("removes the given projects and returns how many were deleted", async () => {
+    const { createProject, deleteProjects, getAllProjects } = await import("@/lib/store");
+    const first = await createProject(baseSubmission);
+    const second = await createProject({ ...baseSubmission, title: "다른 프로젝트" });
+
+    const deletedCount = await deleteProjects([first.id]);
+    expect(deletedCount).toBe(1);
+
+    const remaining = await getAllProjects();
+    expect(remaining.map((p) => p.id)).not.toContain(first.id);
+    expect(remaining.map((p) => p.id)).toContain(second.id);
+  });
+
+  it("ignores unknown ids and only counts ones that actually existed", async () => {
+    const { createProject, deleteProjects } = await import("@/lib/store");
+    const project = await createProject(baseSubmission);
+    const deletedCount = await deleteProjects([project.id, randomUUID()]);
+    expect(deletedCount).toBe(1);
+  });
+
+  it("returns 0 and does nothing for an empty id list", async () => {
+    const { createProject, deleteProjects, getAllProjects } = await import("@/lib/store");
+    await createProject(baseSubmission);
+    const before = await getAllProjects();
+    const deletedCount = await deleteProjects([]);
+    expect(deletedCount).toBe(0);
+    expect(await getAllProjects()).toHaveLength(before.length);
+  });
+});

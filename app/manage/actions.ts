@@ -17,7 +17,7 @@ import {
 import { getLocale } from "@/lib/i18n";
 import { getRequestOrigin } from "@/lib/origin";
 import { getManagementSchema } from "@/lib/schema";
-import { getProjectByIdForManagement, updateProject } from "@/lib/store";
+import { deleteProjects, getAllProjects, getProjectByIdForManagement, updateProject } from "@/lib/store";
 import type { ExhibitionStatus, Project, ProjectUpdateInput } from "@/lib/types";
 
 export async function logoutAction(): Promise<void> {
@@ -117,4 +117,27 @@ export async function updateProjectAction(
   revalidatePath(`/projects/${id}`);
 
   return { status: "success", message: dict.validation.editSuccess };
+}
+
+/** Bulk-deletes projects from the "Private" management group. Restricted to
+ * projects that are currently "private" server-side, independent of what the
+ * client sent — this button only ever appears in that section, but a status
+ * check here means a stale/tampered request can't delete anything else. */
+export async function deleteProjectsAction(ids: string[]): Promise<{ deletedCount: number }> {
+  await requireTeacherSession();
+  if (ids.length === 0) return { deletedCount: 0 };
+
+  const all = await getAllProjects();
+  const deletableIds = ids.filter((id) =>
+    all.some((p) => p.id === id && p.status === "private")
+  );
+  const deletedCount = await deleteProjects(deletableIds);
+
+  revalidatePath("/manage");
+  revalidatePath("/");
+  for (const id of deletableIds) {
+    revalidatePath(`/projects/${id}`);
+  }
+
+  return { deletedCount };
 }
