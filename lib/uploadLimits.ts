@@ -8,16 +8,16 @@
 // reason is always shown, and the platform ceiling is never actually hit.
 export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
-// A video specifically can go bigger than MAX_UPLOAD_BYTES by taking a
-// different path entirely: the browser splits it into chunks well under the
-// platform's per-request ceiling and uploads each one separately (see
-// components/ProjectForm.tsx's video-relay flow and
+// A video or PDF specifically can go bigger than MAX_UPLOAD_BYTES by taking
+// a different path entirely: the browser splits it into chunks well under
+// the platform's per-request ceiling and uploads each one separately (see
+// components/ProjectForm.tsx's media-relay flow and
 // app/api/media-upload/*/route.ts), and the server reassembles and relays
 // the complete file to GitHub Releases (lib/github.ts) rather than storing
 // it itself. Capped well below what GitHub Releases can actually hold
 // (2GB/asset) to keep the server-side reassemble-and-upload step comfortably
 // inside a Netlify function's execution time limit.
-export const MAX_GITHUB_VIDEO_BYTES = 40 * 1024 * 1024;
+export const MAX_GITHUB_RELAY_BYTES = 40 * 1024 * 1024;
 
 // Each chunk has to clear the same ~4.5MB platform ceiling as any other
 // request — 3MB leaves comfortable headroom.

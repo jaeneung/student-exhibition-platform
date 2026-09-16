@@ -1,8 +1,8 @@
 import "server-only";
 
 /**
- * Relays a large video to a GitHub Release asset instead of storing it
- * ourselves — the app's own /files/{id} route only works for files small
+ * Relays a large video or PDF to a GitHub Release asset instead of storing
+ * it ourselves — the app's own /files/{id} route only works for files small
  * enough to fit through a single request (see lib/uploadLimits.ts), but a
  * GitHub Release asset supports up to 2GB and is served from GitHub's own
  * CDN, not this app's function.
@@ -23,7 +23,7 @@ function requireGithubToken(): string {
   const token = process.env.GITHUB_MEDIA_TOKEN;
   if (!token) {
     throw new Error(
-      "GITHUB_MEDIA_TOKEN is not set. Video relay-to-GitHub requires a fine-grained " +
+      "GITHUB_MEDIA_TOKEN is not set. Media relay-to-GitHub requires a fine-grained " +
         "Personal Access Token scoped to this repo's Contents (Read and write) — see README."
     );
   }
@@ -46,11 +46,11 @@ interface GithubRelease {
   id: number;
 }
 
-/** Finds the shared release every relayed video is attached to as an asset,
+/** Finds the shared release every relayed file is attached to as an asset,
  * creating it on first use. Deliberately a real, published (non-draft)
  * release — a draft release's assets require authentication to download,
- * which would break playback for anonymous exhibition visitors the same
- * way a private repo would. */
+ * which would break playback/download for anonymous exhibition visitors the
+ * same way a private repo would. */
 async function getOrCreateRelease(): Promise<number> {
   const existing = await githubFetch(
     `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/releases/tags/${RELEASE_TAG}`
@@ -68,11 +68,11 @@ async function getOrCreateRelease(): Promise<number> {
     body: JSON.stringify({
       tag_name: RELEASE_TAG,
       target_commitish: "main",
-      name: "Media Uploads (student project videos)",
+      name: "Media Uploads (student project videos/PDFs)",
       body:
         "Automatically created and managed by the exhibition platform to host student-submitted " +
-        "video files too large to serve directly from the app itself. Live project links point " +
-        "here — please don't delete this release or its assets.",
+        "video and PDF files too large to serve directly from the app itself. Live project links " +
+        "point here — please don't delete this release or its assets.",
       draft: false,
       prerelease: false,
     }),
@@ -91,7 +91,7 @@ interface GithubReleaseAsset {
 /** Uploads `buffer` as a new asset on the shared release and returns its
  * public download URL. `filename` is prefixed with a timestamp so two
  * students submitting a file with the same name never collide. */
-export async function uploadVideoToGithub(
+export async function uploadFileToGithub(
   buffer: Buffer,
   filename: string,
   contentType: string
@@ -108,7 +108,7 @@ export async function uploadVideoToGithub(
     }
   );
   if (!uploaded.ok) {
-    throw new Error(`Failed to upload the video to GitHub (status ${uploaded.status}).`);
+    throw new Error(`Failed to upload the file to GitHub (status ${uploaded.status}).`);
   }
   const asset = (await uploaded.json()) as GithubReleaseAsset;
   return asset.browser_download_url;

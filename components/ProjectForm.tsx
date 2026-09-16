@@ -5,7 +5,7 @@ import { format, type Dictionary } from "@/lib/dictionary";
 import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, PROJECT_GRADES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
 import type { FormActionState } from "@/lib/formAction";
-import { MAX_GITHUB_VIDEO_BYTES, MAX_UPLOAD_BYTES, MEDIA_UPLOAD_CHUNK_BYTES } from "@/lib/uploadLimits";
+import { MAX_GITHUB_RELAY_BYTES, MAX_UPLOAD_BYTES, MEDIA_UPLOAD_CHUNK_BYTES } from "@/lib/uploadLimits";
 
 function formatMb(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1);
@@ -13,13 +13,15 @@ function formatMb(bytes: number): string {
 
 const RELAYABLE_VIDEO_EXTENSIONS = ["mp4", "webm", "mov", "ogv"];
 
-function looksLikeVideoFile(file: File): boolean {
-  if (file.type.startsWith("video/")) return true;
+function looksLikeRelayableFile(file: File): boolean {
+  if (file.type.startsWith("video/") || file.type === "application/pdf") return true;
+  if (/\.pdf$/i.test(file.name)) return true;
   return RELAYABLE_VIDEO_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(`.${ext}`));
 }
 
-function guessVideoContentType(filename: string): string {
+function guessRelayContentType(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
+  if (ext === "pdf") return "application/pdf";
   if (ext === "webm") return "video/webm";
   if (ext === "mov") return "video/quicktime";
   if (ext === "ogv") return "video/ogg";
@@ -187,13 +189,13 @@ export function ProjectForm({
   const [launchUrlValue, setLaunchUrlValue] = useState(
     errorValues?.launchUrl || (hasExistingUpload ? "" : project?.launchUrl) || ""
   );
-  const [videoRelay, setVideoRelay] = useState<
+  const [mediaRelay, setMediaRelay] = useState<
     { status: "uploading"; progress: number } | { status: "error"; message: string } | undefined
   >(undefined);
   const [relaySucceeded, setRelaySucceeded] = useState(false);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (oversizeBytes !== undefined || videoRelay?.status === "uploading") {
+    if (oversizeBytes !== undefined || mediaRelay?.status === "uploading") {
       event.preventDefault();
     }
   }
@@ -201,13 +203,13 @@ export function ProjectForm({
   /** Splits `file` into chunks small enough to each individually clear
    * Netlify's per-request body-size ceiling, uploads them one at a time to
    * app/api/media-upload/chunk, then asks app/api/media-upload/finalize to
-   * reassemble them and relay the complete video to a GitHub Release asset
-   * (see lib/github.ts) — the one way this app can host a video bigger than
-   * MAX_UPLOAD_BYTES itself. On success, switches the form to URL mode with
-   * the resulting link already filled in, so submission afterward is the
-   * exact same path as a student pasting a YouTube link by hand. */
-  async function relayVideoToGithub(file: File) {
-    setVideoRelay({ status: "uploading", progress: 0 });
+   * reassemble them and relay the complete video or PDF to a GitHub Release
+   * asset (see lib/github.ts) — the one way this app can host a file bigger
+   * than MAX_UPLOAD_BYTES itself. On success, switches the form to URL mode
+   * with the resulting link already filled in, so submission afterward is
+   * the exact same path as a student pasting a YouTube link by hand. */
+  async function relayFileToGithub(file: File) {
+    setMediaRelay({ status: "uploading", progress: 0 });
     const uploadId =
       typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
@@ -225,7 +227,7 @@ export function ProjectForm({
         if (!res.ok) throw new Error("chunk upload failed");
         // The last 10% is reserved for the finalize/relay step, which has
         // no per-chunk progress of its own to report.
-        setVideoRelay({ status: "uploading", progress: Math.round(((index + 1) / totalChunks) * 90) });
+        setMediaRelay({ status: "uploading", progress: Math.round(((index + 1) / totalChunks) * 90) });
       }
 
       const finalizeRes = await fetch("/api/media-upload/finalize", {
@@ -235,18 +237,18 @@ export function ProjectForm({
           uploadId,
           totalChunks,
           filename: file.name,
-          contentType: file.type || guessVideoContentType(file.name),
+          contentType: file.type || guessRelayContentType(file.name),
         }),
       });
       if (!finalizeRes.ok) throw new Error("finalize failed");
       const data = (await finalizeRes.json()) as { url: string };
 
-      setVideoRelay(undefined);
+      setMediaRelay(undefined);
       setLaunchUrlValue(data.url);
       setLaunchMode("url");
       setRelaySucceeded(true);
     } catch {
-      setVideoRelay({ status: "error", message: f.videoRelayError });
+      setMediaRelay({ status: "error", message: f.mediaRelayError });
     }
   }
 
@@ -451,7 +453,7 @@ export function ProjectForm({
               placeholder={f.launchUrlPlaceholder}
             />
             {relaySucceeded && (
-              <p className="text-xs text-emerald-700 dark:text-emerald-400">{f.videoRelaySuccess}</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400">{f.mediaRelaySuccess}</p>
             )}
           </Field>
         ) : launchMode === "file" ? (
@@ -471,18 +473,18 @@ export function ProjectForm({
               onChange={(e) => {
                 const selected = e.target.files?.[0];
                 setSingleFileName(selected?.name);
-                setVideoRelay(undefined);
+                setMediaRelay(undefined);
                 if (
                   selected &&
                   selected.size > MAX_UPLOAD_BYTES &&
-                  looksLikeVideoFile(selected) &&
-                  selected.size <= MAX_GITHUB_VIDEO_BYTES
+                  looksLikeRelayableFile(selected) &&
+                  selected.size <= MAX_GITHUB_RELAY_BYTES
                 ) {
                   // Too big to host ourselves but still within what the
                   // GitHub relay accepts — upload it there automatically
                   // instead of just telling the student to do it by hand.
                   setOversizeBytes(undefined);
-                  void relayVideoToGithub(selected);
+                  void relayFileToGithub(selected);
                   return;
                 }
                 setOversizeBytes(selected && selected.size > MAX_UPLOAD_BYTES ? selected.size : undefined);
@@ -500,27 +502,27 @@ export function ProjectForm({
                 {f.launchFileHtmlOnlyWarning}
               </div>
             )}
-            {videoRelay?.status === "uploading" && (
+            {mediaRelay?.status === "uploading" && (
               <div
                 role="status"
                 className="flex flex-col gap-1.5 rounded-xl border border-brand-300 bg-brand-50 px-3 py-2.5 text-sm text-brand-900 dark:border-brand-700 dark:bg-brand-950 dark:text-brand-200"
               >
-                <span>{format(f.videoRelayUploading, { progress: videoRelay.progress })}</span>
+                <span>{format(f.mediaRelayUploading, { progress: mediaRelay.progress })}</span>
                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-brand-200 dark:bg-brand-900">
                   <div
                     className="h-full rounded-full bg-brand-600 transition-[width]"
-                    style={{ width: `${videoRelay.progress}%` }}
+                    style={{ width: `${mediaRelay.progress}%` }}
                   />
                 </div>
               </div>
             )}
-            {videoRelay?.status === "error" && (
+            {mediaRelay?.status === "error" && (
               <div
                 role="alert"
                 className="flex items-start gap-2 rounded-xl border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-200"
               >
                 <span aria-hidden="true">⛔</span>
-                {videoRelay.message}
+                {mediaRelay.message}
               </div>
             )}
             {oversizeBytes !== undefined && (
@@ -689,7 +691,7 @@ export function ProjectForm({
 
       <button
         type="submit"
-        disabled={isPending || oversizeBytes !== undefined || videoRelay?.status === "uploading"}
+        disabled={isPending || oversizeBytes !== undefined || mediaRelay?.status === "uploading"}
         className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 px-6 text-base font-semibold text-white shadow-md shadow-brand-600/30 transition hover:from-brand-700 hover:to-brand-800 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600"
       >
         {isPending ? f.submitButtonSaving : submitLabel}

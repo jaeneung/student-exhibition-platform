@@ -175,20 +175,21 @@ Server Action 요청 본문은 Next.js 기본값이 1MB라 `next.config.ts`의
   각 Server Action 안에서 `hasValidTeacherSession()` / `requireTeacherSession()`으로
   이중 확인합니다; `proxy.ts` 쪽 확인은 로컬 개발에서만 동작하는 보너스입니다.
 
-## 동영상 자동 업로드 (GitHub 릴레이)
+## 동영상/PDF 자동 업로드 (GitHub 릴레이)
 
 일반 파일 업로드는 4MB가 한도지만(Netlify 플랫폼 자체 한계, 위 참고), 제출 폼에서
-**동영상(.mp4/.webm/.mov)** 파일이 4MB를 넘으면서 40MB 이하라면 자동으로 다른 경로를
-탑니다 — 이 앱 자체가 저장하는 대신, GitHub Releases에 에셋으로 올려서 그 다운로드
-링크를 실행 링크로 씁니다.
+**동영상(.mp4/.webm/.mov)이나 PDF** 파일이 4MB를 넘으면서 40MB 이하라면 자동으로 다른
+경로를 탑니다 — 이 앱 자체가 저장하는 대신, GitHub Releases에 에셋으로 올려서 그
+다운로드 링크를 실행 링크로 씁니다.
 
-**작동 원리**: 브라우저가 영상을 3MB 이하 조각으로 잘라
+**작동 원리**: 브라우저가 파일을 3MB 이하 조각으로 잘라
 `app/api/media-upload/chunk/route.ts`에 순서대로 업로드하고(각 조각도 결국 같은
 4.5MB 플랫폼 한도 안에 들어와야 하므로), 서버가 `lib/mediaUploadChunks.ts`(Netlify
 Blobs에 임시 저장)에 모았다가 `app/api/media-upload/finalize/route.ts`에서 하나로
-합친 뒤 `lib/github.ts`를 통해 GitHub Release 에셋으로 업로드합니다. 완료되면 폼이
-자동으로 "🔗 링크 입력" 모드로 전환되고 결과 링크가 채워져서, 이후 제출 과정은 학생이
-유튜브 링크를 직접 붙여넣는 것과 완전히 동일한 경로를 탑니다.
+합친 뒤(이때 실제 video/PDF 형식인지 다시 한번 검증합니다) `lib/github.ts`를 통해
+GitHub Release 에셋으로 업로드합니다. 완료되면 폼이 자동으로 "🔗 링크 입력" 모드로
+전환되고 결과 링크가 채워져서, 이후 제출 과정은 학생이 유튜브 링크를 직접 붙여넣는 것과
+완전히 동일한 경로를 탑니다.
 
 **필요한 설정**:
 - `GITHUB_MEDIA_TOKEN`: 이 저장소에만 범위가 한정된 fine-grained Personal Access
@@ -202,8 +203,9 @@ Blobs에 임시 저장)에 모았다가 `app/api/media-upload/finalize/route.ts`
 - 릴레이에 쓰는 GitHub Release(태그 `media-uploads`)는 첫 사용 시 자동으로 생성되며,
   실제 서비스 중인 프로젝트들이 그 에셋을 참조하므로 수동으로 지우면 안 됩니다.
 - 40MB 상한은 재조립+업로드가 Netlify Function의 실행 시간 제한 안에 여유 있게
-  끝나도록 보수적으로 잡은 값입니다(`lib/uploadLimits.ts`의 `MAX_GITHUB_VIDEO_BYTES`).
-  그보다 큰 동영상은 여전히 유튜브 등에 올리고 링크를 제출해야 합니다.
+  끝나도록 보수적으로 잡은 값입니다(`lib/uploadLimits.ts`의 `MAX_GITHUB_RELAY_BYTES`).
+  그보다 큰 파일은 여전히 유튜브(동영상)나 구글 드라이브(문서) 등에 올리고 링크를
+  제출해야 합니다.
 - `app/api/media-upload/*` 라우트는 Server Action이 아닌 일반 Route Handler라 Next.js의
   same-origin 보호를 받지 못하므로, `lib/mediaUploadGuard.ts`가 Origin/Referer 헤더로
   자체적으로 같은 출처인지 확인합니다 — 인증까지는 아니고, 외부 페이지가 방문자 브라우저를

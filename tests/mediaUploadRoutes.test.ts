@@ -83,14 +83,14 @@ describe("POST /api/media-upload/finalize", () => {
 
   it("reassembles chunks, relays to GitHub, and cleans up", async () => {
     vi.doMock("@/lib/github", () => ({
-      uploadVideoToGithub: vi.fn(async () => "https://github.com/example/releases/download/media/video.mp4"),
+      uploadFileToGithub: vi.fn(async () => "https://github.com/example/releases/download/media/video.mp4"),
     }));
     const uploadId = "test-finalize-ok";
     await saveChunk(uploadId, 0, Buffer.from("hello-").toString("base64"));
     await saveChunk(uploadId, 1, Buffer.from("world").toString("base64"));
 
     const { POST } = await import("@/app/api/media-upload/finalize/route");
-    const { uploadVideoToGithub } = await import("@/lib/github");
+    const { uploadFileToGithub } = await import("@/lib/github");
     const request = new Request(`${ORIGIN}/api/media-upload/finalize`, {
       method: "POST",
       headers: { ...sameOriginHeaders(), "content-type": "application/json" },
@@ -106,7 +106,7 @@ describe("POST /api/media-upload/finalize", () => {
     expect(response.status).toBe(200);
     const data = await response.json();
     expect(data.url).toBe("https://github.com/example/releases/download/media/video.mp4");
-    expect(vi.mocked(uploadVideoToGithub)).toHaveBeenCalledWith(
+    expect(vi.mocked(uploadFileToGithub)).toHaveBeenCalledWith(
       Buffer.from("hello-world"),
       "clip.mp4",
       "video/mp4"
@@ -115,14 +115,51 @@ describe("POST /api/media-upload/finalize", () => {
     expect(await readChunk(uploadId, 1)).toBeUndefined();
   });
 
-  it("rejects a non-video content type", async () => {
-    vi.doMock("@/lib/github", () => ({ uploadVideoToGithub: vi.fn() }));
+  it("also relays a PDF, not just video", async () => {
+    vi.doMock("@/lib/github", () => ({
+      uploadFileToGithub: vi.fn(async () => "https://github.com/example/releases/download/media/report.pdf"),
+    }));
+    // Dynamically re-imported (rather than using this file's top-level
+    // saveChunk/readChunk) so this resolves to the exact same module
+    // instance the freshly-imported route below will read from — a prior
+    // test's afterEach calls vi.resetModules(), which would otherwise leave
+    // the top-level import pointing at a stale, separate in-memory store.
+    const { saveChunk: saveChunkFresh } = await import("@/lib/mediaUploadChunks");
+    const uploadId = "test-finalize-pdf";
+    await saveChunkFresh(uploadId, 0, Buffer.from("%PDF-1.4").toString("base64"));
+
+    const { POST } = await import("@/app/api/media-upload/finalize/route");
+    const { uploadFileToGithub } = await import("@/lib/github");
+    const request = new Request(`${ORIGIN}/api/media-upload/finalize`, {
+      method: "POST",
+      headers: { ...sameOriginHeaders(), "content-type": "application/json" },
+      body: JSON.stringify({
+        uploadId,
+        totalChunks: 1,
+        filename: "report.pdf",
+        contentType: "application/pdf",
+      }),
+    });
+
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    expect(data.url).toBe("https://github.com/example/releases/download/media/report.pdf");
+    expect(vi.mocked(uploadFileToGithub)).toHaveBeenCalledWith(
+      Buffer.from("%PDF-1.4"),
+      "report.pdf",
+      "application/pdf"
+    );
+  });
+
+  it("rejects a content type that isn't video or PDF", async () => {
+    vi.doMock("@/lib/github", () => ({ uploadFileToGithub: vi.fn() }));
     const { POST } = await import("@/app/api/media-upload/finalize/route");
     const request = new Request(`${ORIGIN}/api/media-upload/finalize`, {
       method: "POST",
       headers: { ...sameOriginHeaders(), "content-type": "application/json" },
       body: JSON.stringify({
-        uploadId: "test-not-video",
+        uploadId: "test-not-relayable",
         totalChunks: 1,
         filename: "notes.txt",
         contentType: "text/plain",
@@ -133,12 +170,12 @@ describe("POST /api/media-upload/finalize", () => {
   });
 
   it("reports a missing chunk instead of relaying a partial file", async () => {
-    vi.doMock("@/lib/github", () => ({ uploadVideoToGithub: vi.fn() }));
+    vi.doMock("@/lib/github", () => ({ uploadFileToGithub: vi.fn() }));
     const uploadId = "test-missing-chunk";
     await saveChunk(uploadId, 0, Buffer.from("only-this-one").toString("base64"));
 
     const { POST } = await import("@/app/api/media-upload/finalize/route");
-    const { uploadVideoToGithub } = await import("@/lib/github");
+    const { uploadFileToGithub } = await import("@/lib/github");
     const request = new Request(`${ORIGIN}/api/media-upload/finalize`, {
       method: "POST",
       headers: { ...sameOriginHeaders(), "content-type": "application/json" },
@@ -151,11 +188,11 @@ describe("POST /api/media-upload/finalize", () => {
     });
     const response = await POST(request);
     expect(response.status).toBe(400);
-    expect(vi.mocked(uploadVideoToGithub)).not.toHaveBeenCalled();
+    expect(vi.mocked(uploadFileToGithub)).not.toHaveBeenCalled();
   });
 
   it("rejects a cross-origin request", async () => {
-    vi.doMock("@/lib/github", () => ({ uploadVideoToGithub: vi.fn() }));
+    vi.doMock("@/lib/github", () => ({ uploadFileToGithub: vi.fn() }));
     const { POST } = await import("@/app/api/media-upload/finalize/route");
     const request = new Request(`${ORIGIN}/api/media-upload/finalize`, {
       method: "POST",

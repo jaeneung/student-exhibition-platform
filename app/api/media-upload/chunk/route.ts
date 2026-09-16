@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { isSameOriginRequest } from "@/lib/mediaUploadGuard";
 import { saveChunk } from "@/lib/mediaUploadChunks";
-import { MAX_GITHUB_VIDEO_BYTES, MEDIA_UPLOAD_CHUNK_BYTES } from "@/lib/uploadLimits";
+import { MAX_GITHUB_RELAY_BYTES, MEDIA_UPLOAD_CHUNK_BYTES } from "@/lib/uploadLimits";
 
-// A generous few chunks above what MAX_GITHUB_VIDEO_BYTES actually requires
+// A generous few chunks above what MAX_GITHUB_RELAY_BYTES actually requires
 // (~14 at the current chunk size) — bounds a malicious `total` claim
-// without being so tight that raising MAX_GITHUB_VIDEO_BYTES later means
+// without being so tight that raising MAX_GITHUB_RELAY_BYTES later means
 // remembering to update this too.
-const MAX_CHUNKS = Math.ceil(MAX_GITHUB_VIDEO_BYTES / MEDIA_UPLOAD_CHUNK_BYTES) + 4;
+const MAX_CHUNKS = Math.ceil(MAX_GITHUB_RELAY_BYTES / MEDIA_UPLOAD_CHUNK_BYTES) + 4;
 
 /**
- * Accepts one piece of a video being relayed to GitHub (see
+ * Accepts one piece of a video or PDF being relayed to GitHub (see
  * lib/github.ts) — the browser splits the file into chunks small enough to
  * individually clear Netlify's own per-request body-size ceiling (see
  * lib/uploadLimits.ts) and uploads them one at a time; app/api/media-upload/
