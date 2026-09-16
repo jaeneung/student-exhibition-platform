@@ -182,14 +182,21 @@ Server Action 요청 본문은 Next.js 기본값이 1MB라 `next.config.ts`의
 경로를 탑니다 — 이 앱 자체가 저장하는 대신, GitHub Releases에 에셋으로 올려서 그
 다운로드 링크를 실행 링크로 씁니다.
 
-**작동 원리**: 브라우저가 파일을 3MB 이하 조각으로 잘라
-`app/api/media-upload/chunk/route.ts`에 순서대로 업로드하고(각 조각도 결국 같은
-4.5MB 플랫폼 한도 안에 들어와야 하므로), 서버가 `lib/mediaUploadChunks.ts`(Netlify
-Blobs에 임시 저장)에 모았다가 `app/api/media-upload/finalize/route.ts`에서 하나로
-합친 뒤(이때 실제 video/PDF 형식인지 다시 한번 검증합니다) `lib/github.ts`를 통해
-GitHub Release 에셋으로 업로드합니다. 완료되면 폼이 자동으로 "🔗 링크 입력" 모드로
-전환되고 결과 링크가 채워져서, 이후 제출 과정은 학생이 유튜브 링크를 직접 붙여넣는 것과
-완전히 동일한 경로를 탑니다.
+**작동 원리**: 브라우저가 파일을 1MB 이하 조각으로 잘라
+`app/api/media-upload/chunk/route.ts`에 순서대로 업로드하고, 서버가
+`lib/mediaUploadChunks.ts`(Netlify Blobs에 임시 저장)에 모았다가
+`app/api/media-upload/finalize/route.ts`에서 하나로 합친 뒤(이때 실제 video/PDF
+형식인지 다시 한번 검증합니다) `lib/github.ts`를 통해 GitHub Release 에셋으로
+업로드합니다. 완료되면 폼이 자동으로 "🔗 링크 입력" 모드로 전환되고 결과 링크가
+채워져서, 이후 제출 과정은 학생이 유튜브 링크를 직접 붙여넣는 것과 완전히 동일한
+경로를 탑니다.
+
+조각 크기가 1MB인 이유는 일반 파일 업로드(Server Action, 위 참고)의 ~4.5MB 한도와는
+별개입니다 — `app/api/media-upload/chunk`는 평범한 Route Handler라서, 실제로
+배포된 사이트에 직접 확인해 보니 raw 요청 본문이 약 1.67MB만 넘어도 이 앱 코드가
+실행되기 전에 Netlify가 413으로 거부했습니다(Server Action 경로보다 훨씬 낮음).
+`lib/uploadLimits.ts`의 `MEDIA_UPLOAD_CHUNK_BYTES`가 이 실측값보다 넉넉히 낮게
+잡혀 있습니다.
 
 **필요한 설정**:
 - `GITHUB_MEDIA_TOKEN`: 이 저장소에만 범위가 한정된 fine-grained Personal Access

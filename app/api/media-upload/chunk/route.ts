@@ -4,8 +4,8 @@ import { saveChunk } from "@/lib/mediaUploadChunks";
 import { MAX_GITHUB_RELAY_BYTES, MEDIA_UPLOAD_CHUNK_BYTES } from "@/lib/uploadLimits";
 
 // A generous few chunks above what MAX_GITHUB_RELAY_BYTES actually requires
-// (~14 at the current chunk size) — bounds a malicious `total` claim
-// without being so tight that raising MAX_GITHUB_RELAY_BYTES later means
+// at the current chunk size — bounds a malicious `total` claim without
+// being so tight that raising MAX_GITHUB_RELAY_BYTES later means
 // remembering to update this too.
 const MAX_CHUNKS = Math.ceil(MAX_GITHUB_RELAY_BYTES / MEDIA_UPLOAD_CHUNK_BYTES) + 4;
 

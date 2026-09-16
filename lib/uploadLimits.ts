@@ -19,6 +19,10 @@ export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 // inside a Netlify function's execution time limit.
 export const MAX_GITHUB_RELAY_BYTES = 40 * 1024 * 1024;
 
-// Each chunk has to clear the same ~4.5MB platform ceiling as any other
-// request — 3MB leaves comfortable headroom.
-export const MEDIA_UPLOAD_CHUNK_BYTES = 3 * 1024 * 1024;
+// Each chunk is a plain POST to a Route Handler (app/api/media-upload/chunk),
+// which turns out to have a *lower* real ceiling on Netlify than the ~4.5MB
+// enforced for Server Actions (see MAX_UPLOAD_BYTES above) — verified
+// directly against the live site: a raw body around 1.67MB succeeded, ~1.68MB
+// came back 413 before this app's code ever ran, for this route specifically.
+// 1MB leaves comfortable headroom below that.
+export const MEDIA_UPLOAD_CHUNK_BYTES = 1 * 1024 * 1024;
