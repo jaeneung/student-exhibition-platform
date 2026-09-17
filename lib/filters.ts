@@ -33,11 +33,6 @@ export function getOnDisplayProjects(projects: Project[]): Project[] {
   return projects.filter((project) => project.status === "on_display");
 }
 
-export function getCategoryFacets(projects: Project[]): string[] {
-  const categories = getOnDisplayProjects(projects).map((p) => p.category);
-  return Array.from(new Set(categories)).sort((a, b) => a.localeCompare(b, "ko"));
-}
-
 export function getTagFacets(projects: Project[]): string[] {
   const tags = getOnDisplayProjects(projects).flatMap((p) => p.tags);
   return Array.from(new Set(tags)).sort((a, b) => a.localeCompare(b, "ko"));

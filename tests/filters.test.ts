@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { filterPublicProjects, getCategoryFacets, getGradeFacets, getTagFacets } from "@/lib/filters";
+import { filterPublicProjects, getGradeFacets, getTagFacets } from "@/lib/filters";
 import type { Project } from "@/lib/types";
 
 function makeProject(overrides: Partial<Project>): Project {
@@ -102,7 +102,7 @@ describe("filterPublicProjects", () => {
   });
 });
 
-describe("getCategoryFacets / getTagFacets / getGradeFacets", () => {
+describe("getTagFacets / getGradeFacets", () => {
   it("only derive facets from on_display projects", () => {
     const projects = [
       makeProject({ id: "1", status: "on_display", category: "게임", tags: ["퍼즐"], grade: "G6" }),
@@ -110,7 +110,6 @@ describe("getCategoryFacets / getTagFacets / getGradeFacets", () => {
       makeProject({ id: "3", status: "private", category: "AI 챗봇", tags: ["숨김2"], grade: "G8" }),
     ];
 
-    expect(getCategoryFacets(projects)).toEqual(["게임"]);
     expect(getTagFacets(projects)).toEqual(["퍼즐"]);
     expect(getGradeFacets(projects)).toEqual(["G6"]);
   });

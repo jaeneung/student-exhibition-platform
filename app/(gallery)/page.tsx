@@ -7,7 +7,6 @@ import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { format, getDictionary } from "@/lib/dictionary";
 import {
   filterPublicProjects,
-  getCategoryFacets,
   getGradeFacets,
   getOnDisplayProjects,
   getTagFacets,
@@ -16,6 +15,7 @@ import { getLocale } from "@/lib/i18n";
 import { getRequestOrigin } from "@/lib/origin";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getAllProjects } from "@/lib/store";
+import { PROJECT_CATEGORIES } from "@/lib/types";
 
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -42,7 +42,12 @@ export default async function GalleryPage({
   const allProjects = rawProjects.map((p) => localizeProject(p, locale));
   const projects = filterPublicProjects(allProjects, { q, category, tag, grade });
 
-  const categories = getCategoryFacets(allProjects);
+  // Every defined category, not just ones an on_display project currently
+  // uses (unlike getTagFacets/getGradeFacets below, which are necessarily
+  // data-driven) — so a category like CSA or 로보틱스 still shows up as a
+  // filter option before the first project in it goes on display, instead
+  // of silently disappearing from the gallery until then.
+  const categories: string[] = [...PROJECT_CATEGORIES];
   const tags = getTagFacets(allProjects);
   const grades = getGradeFacets(allProjects);
   const onDisplayCount = getOnDisplayProjects(allProjects).length;
