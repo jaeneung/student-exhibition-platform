@@ -21,8 +21,8 @@ export async function loginAction(
   const username = formData.get("username")?.toString() ?? "";
   const password = formData.get("password")?.toString() ?? "";
 
-  const ip = await getClientIp();
-  const throttle = await checkThrottle(ip);
+  const throttleKey = `ip:${await getClientIp()}`;
+  const throttle = await checkThrottle(throttleKey);
   if (throttle.throttled) {
     return {
       status: "error",
@@ -43,11 +43,11 @@ export async function loginAction(
   }
 
   if (!valid) {
-    await recordFailedAttempt(ip);
+    await recordFailedAttempt(throttleKey);
     return { status: "error", formError: dict.auth.invalidCredentials };
   }
 
-  await resetAttempts(ip);
+  await resetAttempts(throttleKey);
   const store = await cookies();
   store.set(SESSION_COOKIE_NAME, createSessionToken(), sessionCookieOptions());
   redirect("/manage");

@@ -12,6 +12,7 @@ export async function Header() {
     { href: "/", label: dict.nav.gallery },
     { href: "/guide", label: dict.nav.guide },
     { href: "/submit", label: dict.nav.submit },
+    { href: "/my", label: dict.nav.myProjects },
     { href: "/manage", label: dict.nav.manage },
   ];
 

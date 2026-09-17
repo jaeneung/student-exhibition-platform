@@ -165,3 +165,22 @@ describe("deleteProjects", () => {
     expect(await getAllProjects()).toHaveLength(before.length);
   });
 });
+
+describe("getProjectsByOwner", () => {
+  it("returns only the given owner's projects, any status", async () => {
+    const { createProject, getProjectsByOwner, updateProject } = await import("@/lib/store");
+    const owned = await createProject({ ...baseSubmission, ownerId: "student-1" });
+    await updateProject(owned.id, { ...baseSubmission, ownerId: "student-1", status: "on_display" });
+    await createProject({ ...baseSubmission, title: "다른 학생 프로젝트", ownerId: "student-2" });
+    await createProject({ ...baseSubmission, title: "익명 프로젝트" });
+
+    const mine = await getProjectsByOwner("student-1");
+    expect(mine.map((p) => p.id)).toEqual([owned.id]);
+    expect(mine[0].status).toBe("on_display");
+  });
+
+  it("returns an empty array for an owner with no projects", async () => {
+    const { getProjectsByOwner } = await import("@/lib/store");
+    expect(await getProjectsByOwner("nobody")).toEqual([]);
+  });
+});

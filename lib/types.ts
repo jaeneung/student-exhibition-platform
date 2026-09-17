@@ -49,6 +49,38 @@ export interface UploadedFile {
   contentType: string;
 }
 
+/** A student account, created via /student/signup. Deliberately minimal
+ * (username + password only, no email/verification) — see lib/studentAuth.ts
+ * and lib/studentStore.ts. Owns whichever projects it submits, which is what
+ * makes self-service editing (app/my/**) possible without a shared teacher
+ * login standing in for every student. */
+export interface Student {
+  id: string;
+  /** Stored lowercase for case-insensitive uniqueness/lookup; the student's
+   * originally-typed casing isn't preserved separately since it's never
+   * shown anywhere, only used to log back in. */
+  username: string;
+  passwordSalt: string;
+  passwordHash: string;
+  createdAt: string;
+}
+
+/** A snapshot of a project's launch fields taken right before a student
+ * replaces them (see app/my/actions.ts) — just enough to view what an older
+ * version actually was, not to restore it (no revert capability by design).
+ * Text fields (title, description, etc.) aren't versioned, only the
+ * file/link a visitor would actually open, since that's the part a
+ * self-service re-upload can silently change out from under a project that
+ * may already be approved and on display. */
+export interface ProjectVersion {
+  id: string;
+  savedAt: string;
+  launchUrl: string;
+  uploadedHtml?: string;
+  uploadedFiles?: Record<string, UploadedFile>;
+  entryPath?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -86,13 +118,23 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
   translations?: Partial<Record<"en", ProjectTranslation>>;
+  /** The student account that submitted this, if any (see lib/studentAuth.ts).
+   * Undefined for anything submitted before student accounts existed —
+   * those simply never appear in any student's "my projects" list and stay
+   * editable only from /manage, same as always. */
+  ownerId?: string;
+  /** Prior launch-field snapshots, most recent last, capped at
+   * MAX_PROJECT_VERSIONS (see lib/store.ts) — old ones are dropped, not the
+   * project's actual history, just how far back self-service editing keeps
+   * a record. */
+  versions?: ProjectVersion[];
 }
 
 /** Fields a visitor/student can set when submitting a project. Status is always
  * forced to "pending_review" server-side and is never accepted from this shape. */
 export type ProjectSubmissionInput = Omit<
   Project,
-  "id" | "status" | "createdAt" | "updatedAt"
+  "id" | "status" | "createdAt" | "updatedAt" | "versions"
 >;
 
 /** Fields an editor can change from the management screen (includes status). */

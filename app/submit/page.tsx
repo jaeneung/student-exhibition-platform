@@ -2,9 +2,15 @@ import Link from "next/link";
 import { ProjectForm } from "@/components/ProjectForm";
 import { getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
+import { requireStudentSession } from "@/lib/studentAuth";
 import { submitProjectAction } from "./actions";
 
 export default async function SubmitPage() {
+  // Submitting now requires a student account, so the resulting project has
+  // an owner and can later be edited from /my/** (see app/submit/actions.ts).
+  // Bounces to /student/login?next=/submit and back here on success.
+  await requireStudentSession("/submit");
+
   const dict = getDictionary(await getLocale());
 
   return (

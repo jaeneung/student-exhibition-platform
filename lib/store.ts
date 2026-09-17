@@ -131,6 +131,16 @@ export async function getProjectByIdForManagement(
   return all.find((p) => p.id === id);
 }
 
+/** A logged-in student's own projects (app/my/**), any status — a student
+ * needs to see and edit a project regardless of whether a teacher has
+ * approved it yet, the same way getProjectByIdForManagement works for
+ * teachers. Projects submitted before student accounts existed have no
+ * ownerId and simply never appear here. */
+export async function getProjectsByOwner(ownerId: string): Promise<Project[]> {
+  const all = await readAll();
+  return all.filter((p) => p.ownerId === ownerId);
+}
+
 function isDuplicateSubmission(
   existing: Project[],
   input: ProjectSubmissionInput

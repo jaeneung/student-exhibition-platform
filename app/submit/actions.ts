@@ -16,11 +16,17 @@ import { getLocale } from "@/lib/i18n";
 import { getRequestOrigin } from "@/lib/origin";
 import { getSubmissionSchema } from "@/lib/schema";
 import { createProject, DuplicateSubmissionError } from "@/lib/store";
+import { requireStudentSession } from "@/lib/studentAuth";
 
 export async function submitProjectAction(
   _prevState: FormActionState,
   formData: FormData
 ): Promise<FormActionState> {
+  // Defense in depth: app/submit/page.tsx already redirects an anonymous
+  // visitor before this form can even be reached, but a Server Action is
+  // still a callable endpoint in its own right regardless of which page
+  // rendered its trigger (same reasoning as requireTeacherSession).
+  const ownerId = await requireStudentSession("/submit");
   const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
   const parsed = getSubmissionSchema(dict).safeParse(raw);
@@ -72,7 +78,7 @@ export async function submitProjectAction(
 
   try {
     const project = await createProject(
-      submissionValuesToProjectFields(parsed.data, launch.value),
+      { ...submissionValuesToProjectFields(parsed.data, launch.value), ownerId },
       id
     );
     revalidatePath("/manage");

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { serveUpload } from "@/lib/serveUpload";
 import { getProjectByIdForManagement } from "@/lib/store";
 
 /**
@@ -31,28 +32,5 @@ export async function GET(
   }
 
   const requestedPath = path && path.length > 0 ? path.map(decodeURIComponent).join("/") : undefined;
-
-  if (project.uploadedFiles) {
-    const file = project.uploadedFiles[requestedPath ?? project.entryPath ?? ""];
-    if (!file) {
-      return new NextResponse("Not found", { status: 404 });
-    }
-    return new NextResponse(Buffer.from(file.contentBase64, "base64"), {
-      headers: {
-        "Content-Type": file.contentType,
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
-  }
-
-  if (!requestedPath && project.uploadedHtml) {
-    return new NextResponse(project.uploadedHtml, {
-      headers: {
-        "Content-Type": "text/html; charset=utf-8",
-        "X-Content-Type-Options": "nosniff",
-      },
-    });
-  }
-
-  return new NextResponse("Not found", { status: 404 });
+  return serveUpload(project, requestedPath);
 }

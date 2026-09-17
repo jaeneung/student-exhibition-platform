@@ -4,16 +4,24 @@ import { getStore } from "@netlify/blobs";
 import { isNetlifyRuntime } from "./runtime";
 
 /**
- * Slows down password guessing against /manage/login by tracking failed
- * attempts per client IP — not per browser/cookie, so clearing cookies or
- * opening a private window doesn't reset it the way a cookie-based counter
- * would. Uses the same dual-backend pattern as lib/store.ts: Netlify Blobs
- * in production (Functions have no shared memory across invocations), a
- * plain in-memory Map in local dev.
+ * Slows down password guessing by tracking failed attempts against an
+ * arbitrary key — not per browser/cookie, so clearing cookies or opening a
+ * private window doesn't reset it the way a cookie-based counter would.
+ * Uses the same dual-backend pattern as lib/store.ts: Netlify Blobs in
+ * production (Functions have no shared memory across invocations), a plain
+ * in-memory Map in local dev.
+ *
+ * The key is caller-chosen, not always a client IP: /manage/login (a single
+ * shared account) throttles by IP, but student login throttles by username
+ * instead (see app/student/login/actions.ts) — a whole classroom can share
+ * one school-network IP, so an IP-keyed throttle there would let one
+ * student's mistyped password lock out everyone else on the same Wi-Fi.
+ * Keying by username instead still stops brute-forcing any one account
+ * while leaving every other student's login unaffected.
  *
  * This is a defense-in-depth speed bump appropriate for a low-stakes school
  * tool, not a substitute for the scrypt hashing that makes each individual
- * guess expensive — see lib/auth.ts.
+ * guess expensive — see lib/auth.ts / lib/studentAuth.ts.
  */
 const BLOB_STORE_NAME = "exhibition-auth";
 // Tightened from 5/15min: a shared single-account login is worth making
@@ -29,35 +37,35 @@ interface ThrottleRecord {
 
 const memoryStore = new Map<string, ThrottleRecord>();
 
-function blobKey(ip: string): string {
-  return `login-attempts:${ip}`;
+function blobKey(key: string): string {
+  return `login-attempts:${key}`;
 }
 
-async function readRecord(ip: string): Promise<ThrottleRecord | undefined> {
+async function readRecord(key: string): Promise<ThrottleRecord | undefined> {
   if (isNetlifyRuntime()) {
     const store = getStore(BLOB_STORE_NAME);
-    const value = await store.get(blobKey(ip), { type: "json" });
+    const value = await store.get(blobKey(key), { type: "json" });
     return (value as ThrottleRecord | null) ?? undefined;
   }
-  return memoryStore.get(ip);
+  return memoryStore.get(key);
 }
 
-async function writeRecord(ip: string, record: ThrottleRecord): Promise<void> {
+async function writeRecord(key: string, record: ThrottleRecord): Promise<void> {
   if (isNetlifyRuntime()) {
     const store = getStore(BLOB_STORE_NAME);
-    await store.setJSON(blobKey(ip), record);
+    await store.setJSON(blobKey(key), record);
     return;
   }
-  memoryStore.set(ip, record);
+  memoryStore.set(key, record);
 }
 
-async function clearRecord(ip: string): Promise<void> {
+async function clearRecord(key: string): Promise<void> {
   if (isNetlifyRuntime()) {
     const store = getStore(BLOB_STORE_NAME);
-    await store.delete(blobKey(ip));
+    await store.delete(blobKey(key));
     return;
   }
-  memoryStore.delete(ip);
+  memoryStore.delete(key);
 }
 
 /** Best-effort client IP from the headers Netlify/most proxies set. Local
@@ -73,9 +81,9 @@ export async function getClientIp(): Promise<string> {
 }
 
 export async function checkThrottle(
-  ip: string
+  key: string
 ): Promise<{ throttled: boolean; retryAfterSeconds?: number }> {
-  const record = await readRecord(ip);
+  const record = await readRecord(key);
   if (!record) return { throttled: false };
   const elapsed = Date.now() - record.windowStart;
   if (elapsed > WINDOW_MS) return { throttled: false };
@@ -85,16 +93,16 @@ export async function checkThrottle(
   return { throttled: false };
 }
 
-export async function recordFailedAttempt(ip: string): Promise<void> {
+export async function recordFailedAttempt(key: string): Promise<void> {
   const now = Date.now();
-  const existing = await readRecord(ip);
+  const existing = await readRecord(key);
   if (!existing || now - existing.windowStart > WINDOW_MS) {
-    await writeRecord(ip, { count: 1, windowStart: now });
+    await writeRecord(key, { count: 1, windowStart: now });
     return;
   }
-  await writeRecord(ip, { count: existing.count + 1, windowStart: existing.windowStart });
+  await writeRecord(key, { count: existing.count + 1, windowStart: existing.windowStart });
 }
 
-export async function resetAttempts(ip: string): Promise<void> {
-  await clearRecord(ip);
+export async function resetAttempts(key: string): Promise<void> {
+  await clearRecord(key);
 }
