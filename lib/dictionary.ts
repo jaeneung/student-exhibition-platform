@@ -122,6 +122,9 @@ const ko = {
     launchFileHint:
       "HTML 파일 하나로 끝나는 프로젝트라면 그 파일(.html)을 올려주세요. 이미지 등 다른 파일도 함께 쓴다면 폴더 전체를 압축한 ZIP 파일(.zip)을 올리거나, 압축 없이 그대로 올리려면 아래 '📂 폴더 업로드'를 사용하세요 — 사진이 로컬 경로를 가리키고 있으면 전시관에서는 보이지 않으니 이미지가 있다면 둘 중 하나는 꼭 사용해야 해요. 포스터나 카드뉴스처럼 이미지(.png, .jpg, .gif, .webp) 한 장이 결과물이라면 그 파일을 그대로 올려도 돼요. 그 밖에도 PDF, 워드(.doc/.docx), 엑셀(.xls/.xlsx), 파워포인트(.ppt/.pptx), 한글(.hwp), CSV, TXT 등 대부분의 파일 형식을 그대로 업로드할 수 있어요(.svg 제외). 파일은 최대 4MB까지 가능해요 — 동영상(.mp4/.webm/.mov)이나 PDF는 4MB가 넘어도 40MB까지는 자동으로 처리해 드려요(아래 참고). 40MB보다도 크다면 동영상은 유튜브 등에, 문서라면 구글 드라이브 등에 올리고 실행 링크로 그 주소를 입력해 주세요.",
     launchFileKeepHint: "이미 업로드된 파일이 있어요. 새 파일을 선택하면 기존 파일을 대체해요. 그대로 두려면 비워두세요.",
+    launchExistingSingle: "📎 현재 업로드된 파일: {name}",
+    launchExistingHtml: "📎 현재 업로드된 HTML 페이지가 있어요.",
+    launchExistingMulti: "📎 현재 업로드된 사이트: {entry} 외 {extraCount}개 파일",
     launchFileHtmlOnlyWarning:
       "HTML 파일 하나만 올렸어요. 이 파일 안에서 이미지나 동영상을 상대경로로 불러온다면(예: <img src=\"photo.png\">) 전시관에서는 보이지 않아요. 이미지나 동영상이 있다면 위의 '📂 폴더 업로드'나 ZIP 파일 업로드를 사용해 주세요.",
     launchFileTooLargeWarning:
@@ -424,6 +427,9 @@ const en: Dictionary = {
     launchFileHint:
       "If your project is just one HTML file, upload that (.html). If it uses other files too, like images, zip up the whole folder and upload the .zip instead, or use '📂 Upload a Folder' below to upload it with no zipping at all — if a picture points to a path on your own computer, it won't show up in the gallery, so use one of these if your project has images. If your project is just a single image (.png, .jpg, .gif, .webp), you can upload that file directly. Beyond that, most other file types — PDF, Word (.doc/.docx), Excel (.xls/.xlsx), PowerPoint (.ppt/.pptx), HWP (.hwp), CSV, TXT, and more — can also be uploaded as-is (except .svg). Files are limited to 4MB — but a video (.mp4/.webm/.mov) or a PDF is handled automatically up to 40MB even though it's over that (see below). Bigger than 40MB, upload it elsewhere (YouTube for video, Google Drive for documents) and use that as your launch link instead.",
     launchFileKeepHint: "A file is already uploaded. Choosing a new one replaces it — leave this blank to keep the current file.",
+    launchExistingSingle: "📎 Currently uploaded: {name}",
+    launchExistingHtml: "📎 An HTML page is currently uploaded.",
+    launchExistingMulti: "📎 Currently uploaded site: {entry} + {extraCount} more file(s)",
     launchFileHtmlOnlyWarning:
       "You uploaded a single HTML file. If it loads any images or video by a relative path (like <img src=\"photo.png\">), those won't show up in the gallery. If your project uses any, use '📂 Upload a Folder' above or a .zip instead.",
     launchFileTooLargeWarning:

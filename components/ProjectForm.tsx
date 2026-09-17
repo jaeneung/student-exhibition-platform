@@ -68,6 +68,38 @@ async function relayFetch(input: string, init: RequestInit): Promise<Response> {
   return res;
 }
 
+/** A browser can never pre-fill a file <input> with what's already uploaded
+ * (there's no way to hand it a real File without the user picking one), so
+ * without this the field just looks empty on the edit form — easy to read
+ * as "the file is gone" even though it's still safely stored and will stay
+ * that way unless a new one is chosen. Summarizes exactly what's there
+ * instead, from the same uploadedHtml/uploadedFiles a resubmission with an
+ * empty file field falls back to (see resolveLaunchFields's "existing"
+ * param) — so what's shown here is guaranteed to match what actually gets
+ * kept. Also says whether it's a multi-file site, which mode (file vs.
+ * folder) should default to reflect. */
+type ExistingUploadSummary =
+  | { kind: "single"; name: string }
+  | { kind: "multi"; entry: string; extraCount: number }
+  | { kind: "html" };
+
+function summarizeExistingUpload(project: Project | undefined): ExistingUploadSummary | undefined {
+  if (project?.uploadedFiles) {
+    const names = Object.keys(project.uploadedFiles);
+    if (names.length > 1) {
+      return { kind: "multi", entry: project.entryPath ?? names[0], extraCount: names.length - 1 };
+    }
+    return { kind: "single", name: names[0] ?? project.entryPath ?? "" };
+  }
+  // The original filename was never kept for this older, HTML-only upload
+  // shape (only the file's content is stored) — entryPath-based uploads
+  // (above) always have a real name to show instead.
+  if (project?.uploadedHtml !== undefined) {
+    return { kind: "html" };
+  }
+  return undefined;
+}
+
 /** A folder-picker <input> reports each file's location within the chosen
  * folder via the nonstandard but universally-supported `webkitRelativePath`
  * property — not a typed DOM property, so read it defensively. */
@@ -206,9 +238,10 @@ export function ProjectForm({
   const isEditing = Boolean(project);
   const f = dict.form;
   const hasExistingUpload = Boolean(project?.uploadedHtml || project?.uploadedFiles);
+  const existingUpload = summarizeExistingUpload(project);
   const [launchMode, setLaunchMode] = useState<"url" | "file" | "folder">(
     (errorValues?.launchMode as "url" | "file" | "folder" | undefined) ??
-      (hasExistingUpload ? "file" : "url")
+      (existingUpload?.kind === "multi" ? "folder" : hasExistingUpload ? "file" : "url")
   );
   const [folderPaths, setFolderPaths] = useState<string[]>([]);
   const [singleFileName, setSingleFileName] = useState<string | undefined>(undefined);
@@ -511,6 +544,13 @@ export function ProjectForm({
             hint={hasExistingUpload ? f.launchFileKeepHint : f.launchFileHint}
             error={errors.launchFile}
           >
+            {(existingUpload?.kind === "single" || existingUpload?.kind === "html") && (
+              <p className="rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                {existingUpload.kind === "single"
+                  ? format(f.launchExistingSingle, { name: existingUpload.name })
+                  : f.launchExistingHtml}
+              </p>
+            )}
             <input
               id="launchFile"
               name="launchFile"
@@ -593,6 +633,14 @@ export function ProjectForm({
             hint={hasExistingUpload ? f.launchFolderKeepHint : f.launchFolderHint}
             error={errors.launchFile}
           >
+            {existingUpload?.kind === "multi" && (
+              <p className="rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                {format(f.launchExistingMulti, {
+                  entry: existingUpload.entry,
+                  extraCount: existingUpload.extraCount,
+                })}
+              </p>
+            )}
             <input
               ref={setFolderPickerAttrs}
               id="launchFolder"
