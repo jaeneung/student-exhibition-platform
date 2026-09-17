@@ -2,10 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectSubmissionInput } from "@/lib/types";
 
 const blobData = new Map<string, unknown>();
+const getSpy = vi.fn(async (key: string) => blobData.get(key) ?? null);
 
 vi.mock("@netlify/blobs", () => ({
   getStore: () => ({
-    get: async (key: string) => blobData.get(key) ?? null,
+    get: getSpy,
     setJSON: async (key: string, value: unknown) => {
       blobData.set(key, value);
     },
@@ -26,11 +27,18 @@ const baseSubmission: ProjectSubmissionInput = {
 describe("store on Netlify (Blobs backend)", () => {
   beforeEach(() => {
     blobData.clear();
+    getSpy.mockClear();
     process.env.NETLIFY_BLOBS_CONTEXT = "test-context";
+    // lib/store.ts caches a read in module state for a few seconds (see its
+    // comment) to avoid re-fetching Blobs on every request in production —
+    // without resetting it here, that cache would carry a previous test's
+    // data across into this one even after blobData.clear() above.
+    vi.resetModules();
   });
 
   afterEach(() => {
     delete process.env.NETLIFY_BLOBS_CONTEXT;
+    vi.useRealTimers();
   });
 
   it("seeds from sample data on first read, same as the file backend", async () => {
@@ -58,5 +66,48 @@ describe("store on Netlify (Blobs backend)", () => {
     await updateProject(created.id, { ...baseSubmission, status: "on_display" });
     const found = await getPublicProjectById(created.id);
     expect(found?.status).toBe("on_display");
+  });
+});
+
+describe("Blobs read caching (lib/store.ts's readAllFromBlobs)", () => {
+  beforeEach(() => {
+    blobData.clear();
+    getSpy.mockClear();
+    process.env.NETLIFY_BLOBS_CONTEXT = "test-context";
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    delete process.env.NETLIFY_BLOBS_CONTEXT;
+    vi.useRealTimers();
+  });
+
+  it("serves a second read within the cache window from memory, without hitting Blobs again", async () => {
+    const { getAllProjects } = await import("@/lib/store");
+    await getAllProjects();
+    expect(getSpy).toHaveBeenCalledTimes(1);
+    await getAllProjects();
+    expect(getSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("reads from Blobs again once the cache window has elapsed", async () => {
+    vi.useFakeTimers();
+    const { getAllProjects } = await import("@/lib/store");
+    await getAllProjects();
+    expect(getSpy).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(16_000);
+    await getAllProjects();
+    expect(getSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("makes a project's own write visible immediately, without waiting for the cache to expire", async () => {
+    const { createProject, getAllProjects } = await import("@/lib/store");
+    await getAllProjects(); // populates the cache
+    const created = await createProject(baseSubmission);
+    const all = await getAllProjects();
+    expect(all.some((p) => p.id === created.id)).toBe(true);
+    // The write's own updated snapshot should answer this read directly —
+    // not a stale cached read from before createProject ran.
+    expect(getSpy).toHaveBeenCalledTimes(1);
   });
 });

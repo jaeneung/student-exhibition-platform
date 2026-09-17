@@ -80,7 +80,7 @@ function writeAllToFile(projects: Project[]): Promise<void> {
   return task;
 }
 
-async function readAllFromBlobs(): Promise<Project[]> {
+async function readAllFromBlobsUncached(): Promise<Project[]> {
   const store = getStore(BLOB_STORE_NAME);
   const existing = await store.get(BLOB_KEY, { type: "json" });
   if (existing) return existing as Project[];
@@ -88,9 +88,53 @@ async function readAllFromBlobs(): Promise<Project[]> {
   return sampleProjects;
 }
 
-async function writeAllToBlobs(projects: Project[]): Promise<void> {
+async function writeAllToBlobsUncached(projects: Project[]): Promise<void> {
   const store = getStore(BLOB_STORE_NAME);
   await store.setJSON(BLOB_KEY, projects);
+}
+
+// Every page that shows any project data — the gallery, a single project's
+// page, /manage, /my — reads the *entire* collection over the network from
+// Netlify Blobs, including every uploaded file's base64 content, even when
+// all it needs is a title and a thumbnail link. As real submissions
+// accumulate that read gets slower for everyone, on every single page view,
+// regardless of how much of the payload that view actually uses (measured
+// directly against the live site: a single project's detail page — a few
+// KB of actual HTML — had the same ~1-1.2s of *added* latency over a
+// data-free page as the full gallery grid did, which only makes sense if
+// the cost is the read itself, not what gets rendered from it).
+//
+// Splitting large upload content out of this collection into its own
+// per-project storage would fix this properly, but is a real migration of
+// live production data — not something to do as a drive-by speed fix.
+// Caching the parsed read in memory for a short window is a safe
+// stand-in: Netlify Function containers are commonly reused across nearby
+// requests (several visitors browsing within the same few seconds all
+// land on the same warm instance), so this turns most of those repeat
+// reads into a plain in-memory hit instead of a fresh network round trip.
+// Scoped to the Blobs backend only — local dev's file-backed reads are
+// already fast, and caching there would make manual edits to
+// data/projects.json during development appear to do nothing for a while.
+const BLOBS_CACHE_TTL_MS = 15_000;
+let blobsCache: { data: Project[]; expiresAt: number } | undefined;
+
+async function readAllFromBlobs(): Promise<Project[]> {
+  if (blobsCache && Date.now() < blobsCache.expiresAt) {
+    return blobsCache.data;
+  }
+  const data = await readAllFromBlobsUncached();
+  blobsCache = { data, expiresAt: Date.now() + BLOBS_CACHE_TTL_MS };
+  return data;
+}
+
+async function writeAllToBlobs(projects: Project[]): Promise<void> {
+  await writeAllToBlobsUncached(projects);
+  // Keeps *this* warm instance immediately consistent with its own write —
+  // it would otherwise keep serving the pre-write snapshot from its cache
+  // for up to BLOBS_CACHE_TTL_MS after making the change itself. A
+  // different concurrent instance (or this one after the TTL) still only
+  // catches up within that same window, same as any other short-lived cache.
+  blobsCache = { data: projects, expiresAt: Date.now() + BLOBS_CACHE_TTL_MS };
 }
 
 function readAll(): Promise<Project[]> {
