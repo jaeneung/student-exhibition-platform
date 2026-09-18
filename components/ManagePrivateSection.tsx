@@ -2,18 +2,22 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { LinkBrokenBadge } from "@/components/LinkBrokenBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCategoryStyle } from "@/lib/categoryStyles";
 import { format, type Dictionary } from "@/lib/dictionary";
+import type { Locale } from "@/lib/i18n";
 import { EXHIBITION_STATUSES, type Project } from "@/lib/types";
 import { changeStatusAction, deleteProjectsAction } from "@/app/manage/actions";
 
 export function ManagePrivateSection({
   projects,
   dict,
+  locale,
 }: {
   projects: Project[];
   dict: Dictionary;
+  locale: Locale;
 }) {
   const [open, setOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -138,6 +142,7 @@ export function ManagePrivateSection({
                     <div className="flex flex-col gap-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-semibold text-zinc-900 dark:text-zinc-50">{project.title}</span>
+                        <LinkBrokenBadge linkStatus={project.linkStatus} dict={dict} locale={locale} />
                         <StatusBadge status={project.status} label={dict.status[project.status]} />
                         {!project.handsOnAvailable && (
                           <span className="text-xs text-zinc-500">{dict.card.handsOnPaused}</span>

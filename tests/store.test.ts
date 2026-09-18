@@ -267,6 +267,57 @@ describe("content storage split (lib/store.ts's own launch-content storage)", ()
   });
 });
 
+describe("updateLinkStatuses", () => {
+  it("records ok/broken per project without touching unrelated projects", async () => {
+    const { createProject, getAllProjects, updateLinkStatuses } = await import("@/lib/store");
+    const working = await createProject(baseSubmission);
+    const broken = await createProject({ ...baseSubmission, title: "깨진 링크 프로젝트" });
+    const untouched = await createProject({ ...baseSubmission, title: "확인 안 한 프로젝트" });
+
+    await updateLinkStatuses([
+      { id: working.id, ok: true },
+      { id: broken.id, ok: false },
+    ]);
+
+    const all = await getAllProjects();
+    const byId = new Map(all.map((p) => [p.id, p]));
+    expect(byId.get(working.id)?.linkStatus?.ok).toBe(true);
+    expect(byId.get(broken.id)?.linkStatus?.ok).toBe(false);
+    expect(byId.get(untouched.id)?.linkStatus).toBeUndefined();
+  });
+
+  it("applies every result in one combined write, so checking many projects at once can't lose one", async () => {
+    const { createProject, getAllProjects, updateLinkStatuses } = await import("@/lib/store");
+    const projects = [];
+    for (let i = 0; i < 5; i += 1) {
+      projects.push(
+        await createProject({ ...baseSubmission, title: `프로젝트 ${i}`, launchUrl: `https://example.com/${i}` })
+      );
+    }
+
+    await updateLinkStatuses(projects.map((p) => ({ id: p.id, ok: p.title !== "프로젝트 2" })));
+
+    const all = await getAllProjects();
+    for (const p of projects) {
+      const found = all.find((x) => x.id === p.id);
+      expect(found?.linkStatus?.ok).toBe(p.title !== "프로젝트 2");
+    }
+  });
+
+  it("ignores an id that no longer exists", async () => {
+    const { updateLinkStatuses } = await import("@/lib/store");
+    await expect(updateLinkStatuses([{ id: randomUUID(), ok: false }])).resolves.toBeUndefined();
+  });
+
+  it("does nothing for an empty result list", async () => {
+    const { createProject, getAllProjects, updateLinkStatuses } = await import("@/lib/store");
+    await createProject(baseSubmission);
+    const before = await getAllProjects();
+    await updateLinkStatuses([]);
+    expect(await getAllProjects()).toEqual(before);
+  });
+});
+
 describe("getProjectsByOwner", () => {
   it("returns only the given owner's projects, any status", async () => {
     const { createProject, getProjectsByOwner, updateProject } = await import("@/lib/store");

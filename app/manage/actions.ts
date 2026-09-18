@@ -15,9 +15,16 @@ import {
   type FormActionState,
 } from "@/lib/formAction";
 import { getLocale } from "@/lib/i18n";
+import { isLinkReachable } from "@/lib/linkCheck";
 import { getRequestOrigin } from "@/lib/origin";
 import { getManagementSchema } from "@/lib/schema";
-import { deleteProjects, getAllProjects, getProjectByIdForManagement, updateProject } from "@/lib/store";
+import {
+  deleteProjects,
+  getAllProjects,
+  getProjectByIdForManagement,
+  updateLinkStatuses,
+  updateProject,
+} from "@/lib/store";
 import type { ExhibitionStatus, Project, ProjectUpdateInput } from "@/lib/types";
 
 export async function logoutAction(): Promise<void> {
@@ -153,4 +160,31 @@ export async function deleteProjectsAction(ids: string[]): Promise<{ deletedCoun
   }
 
   return { deletedCount };
+}
+
+/** Manually checks every project's launchUrl and records whether it
+ * responded (see lib/linkCheck.ts) — never run automatically, since
+ * checking dozens of URLs (some external, possibly slow) is real network
+ * traffic a normal page load can't afford to pay for. Runs the checks in
+ * parallel (bounded only by however many projects exist, at this app's
+ * small-school scale) and writes every result in one combined update
+ * (updateLinkStatuses) so N concurrent checks can't clobber each other's
+ * outcome the way N concurrent single-project updateProject calls would. */
+export async function checkAllProjectLinksAction(): Promise<{
+  checkedCount: number;
+  brokenCount: number;
+}> {
+  await requireTeacherSession();
+  const all = await getAllProjects();
+  const results = await Promise.all(
+    all.map(async (project) => ({ id: project.id, ok: await isLinkReachable(project.launchUrl) }))
+  );
+  await updateLinkStatuses(results);
+
+  revalidatePath("/manage");
+
+  return {
+    checkedCount: results.length,
+    brokenCount: results.filter((r) => !r.ok).length,
+  };
 }

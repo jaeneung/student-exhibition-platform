@@ -90,6 +90,16 @@ export interface ProjectVersion {
   hasContent?: boolean;
 }
 
+/** The result of the most recent link check (see lib/linkCheck.ts,
+ * triggered manually from /manage — never automatically, since checking
+ * every project's launchUrl is real outbound network traffic and would
+ * make an ordinary page load unpredictably slow). Absent entirely until a
+ * teacher has run a check at least once. */
+export interface LinkStatus {
+  checkedAt: string;
+  ok: boolean;
+}
+
 /** The large part of a project's launch content — everything lib/store.ts
  * keeps out of the main project list/blob so a page that just needs a
  * title and a link (the gallery, /manage's list, /my) never has to
@@ -146,6 +156,8 @@ export interface Project {
    * project's actual history, just how far back self-service editing keeps
    * a record. */
   versions?: ProjectVersion[];
+  /** Result of the last manual link check, if any (see LinkStatus above). */
+  linkStatus?: LinkStatus;
 }
 
 /** Fields a visitor/student can set when submitting a project. Status is always

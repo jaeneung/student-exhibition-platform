@@ -7,6 +7,7 @@ import { filterPublicProjects } from "./filters";
 import { isNetlifyRuntime } from "./runtime";
 import { sampleProjects } from "./sampleData";
 import type {
+  LinkStatus,
   Project,
   ProjectContent,
   ProjectSubmissionInput,
@@ -493,4 +494,27 @@ export async function deleteProjects(ids: string[]): Promise<number> {
     }
   }
   return toDelete.length;
+}
+
+/** Records the outcome of a manual link check (see lib/linkCheck.ts and
+ * app/manage/actions.ts's checkAllProjectLinksAction) against every project
+ * checked, in one read-modify-write — not one updateProject call per
+ * project, which running concurrently would race (each write replaces the
+ * *entire* list, so N concurrent read-modify-writes lose all but the last
+ * one's change; see updateProject's own single-project version of this same
+ * problem, which duplicate-submission checks and the UI already serialize
+ * around one at a time). Silently ignores an id that no longer exists
+ * (deleted between the check starting and finishing). */
+export async function updateLinkStatuses(results: { id: string; ok: boolean }[]): Promise<void> {
+  if (results.length === 0) return;
+  const checkedAt = new Date().toISOString();
+  const outcomeById = new Map(results.map((r) => [r.id, r.ok]));
+  const all = await readAll();
+  const next = all.map((project) => {
+    const ok = outcomeById.get(project.id);
+    if (ok === undefined) return project;
+    const linkStatus: LinkStatus = { checkedAt, ok };
+    return { ...project, linkStatus };
+  });
+  await writeAll(next);
 }

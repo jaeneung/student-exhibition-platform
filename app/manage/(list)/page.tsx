@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { CheckLinksButton } from "@/components/CheckLinksButton";
 import { EmptyState } from "@/components/EmptyState";
+import { LinkBrokenBadge } from "@/components/LinkBrokenBadge";
 import { ManagePrivateSection } from "@/components/ManagePrivateSection";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getTeacherUsername, hasValidTeacherSession } from "@/lib/auth";
@@ -53,14 +55,17 @@ export default async function ManagePage() {
               {format(dict.manage.loggedInAs, { username })}
             </span>
           )}
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="rounded-xl border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-            >
-              {dict.manage.logoutButton}
-            </button>
-          </form>
+          <div className="flex items-center gap-2">
+            <CheckLinksButton dict={dict} />
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="rounded-xl border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                {dict.manage.logoutButton}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
 
@@ -103,6 +108,7 @@ export default async function ManagePage() {
                             <span className="font-semibold text-zinc-900 dark:text-zinc-50">
                               {project.title}
                             </span>
+                            <LinkBrokenBadge linkStatus={project.linkStatus} dict={dict} locale={locale} />
                             <StatusBadge status={project.status} label={dict.status[project.status]} />
                             {!project.handsOnAvailable && (
                               <span className="text-xs text-zinc-500">{dict.card.handsOnPaused}</span>
@@ -145,7 +151,7 @@ export default async function ManagePage() {
       {(() => {
         const privateProjects = projects.filter((p) => p.status === "private");
         if (privateProjects.length === 0) return null;
-        return <ManagePrivateSection projects={privateProjects} dict={dict} />;
+        return <ManagePrivateSection projects={privateProjects} dict={dict} locale={locale} />;
       })()}
     </div>
   );
