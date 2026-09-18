@@ -20,9 +20,12 @@ function formatDate(iso: string, locale: string): string {
  * entryPath, e.g. a legacy lone-.html version — an *empty* segment there
  * would make the catch-all route look up a literal "" filename and 404),
  * or straight to the version's own launchUrl when it was an external link
- * with nothing uploaded at all. */
+ * with nothing uploaded at all. Checked via `hasContent`, not the
+ * uploadedFiles/uploadedHtml fields themselves — those live in their own
+ * storage key (see lib/store.ts) and are never present on a version object
+ * from an ordinary lookup like the one this page does. */
 function versionViewHref(id: string, version: ProjectVersion): string {
-  if (!version.uploadedFiles && version.uploadedHtml === undefined) {
+  if (!version.hasContent) {
     return version.launchUrl;
   }
   return version.entryPath

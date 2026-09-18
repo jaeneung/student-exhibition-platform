@@ -79,6 +79,24 @@ export interface ProjectVersion {
   uploadedHtml?: string;
   uploadedFiles?: Record<string, UploadedFile>;
   entryPath?: string;
+  /** Whether this version had uploadedFiles/uploadedHtml at all, as opposed
+   * to launchUrl being a plain external link with nothing hosted by this
+   * app. Set once, at the moment the version is created (see
+   * lib/store.ts's splitProjectForStorage) — the fields above are stored
+   * separately from every ordinary lookup of a project's versions (see
+   * lib/store.ts's top comment), so this is how a version-history listing
+   * can tell "open the uploaded content" from "open the external link"
+   * apart without fetching that content just to check. */
+  hasContent?: boolean;
+}
+
+/** The large part of a project's launch content — everything lib/store.ts
+ * keeps out of the main project list/blob so a page that just needs a
+ * title and a link (the gallery, /manage's list, /my) never has to
+ * transfer or parse it. See lib/store.ts's top-of-file comment for why. */
+export interface ProjectContent {
+  uploadedHtml?: string;
+  uploadedFiles?: Record<string, UploadedFile>;
 }
 
 export interface Project {

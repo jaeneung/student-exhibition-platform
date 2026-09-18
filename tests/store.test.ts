@@ -10,10 +10,12 @@ let tempDir: string;
 beforeEach(async () => {
   tempDir = await mkdtemp(path.join(tmpdir(), "exhibition-store-test-"));
   process.env.PROJECTS_DATA_FILE = path.join(tempDir, "projects.json");
+  process.env.PROJECT_CONTENT_DATA_FILE = path.join(tempDir, "project-content.json");
 });
 
 afterEach(async () => {
   delete process.env.PROJECTS_DATA_FILE;
+  delete process.env.PROJECT_CONTENT_DATA_FILE;
   await rm(tempDir, { recursive: true, force: true });
 });
 
@@ -163,6 +165,105 @@ describe("deleteProjects", () => {
     const deletedCount = await deleteProjects([]);
     expect(deletedCount).toBe(0);
     expect(await getAllProjects()).toHaveLength(before.length);
+  });
+});
+
+describe("content storage split (lib/store.ts's own launch-content storage)", () => {
+  it("keeps uploaded content out of the bulk list, but merges it back in for a single lookup", async () => {
+    const { createProject, getAllProjects, getProjectByIdForManagement } = await import("@/lib/store");
+    const created = await createProject({
+      ...baseSubmission,
+      uploadedFiles: { "index.html": { contentBase64: "aGVsbG8=", contentType: "text/html" } },
+      entryPath: "index.html",
+    });
+
+    const all = await getAllProjects();
+    const listed = all.find((p) => p.id === created.id);
+    expect(listed?.uploadedFiles).toBeUndefined();
+
+    const full = await getProjectByIdForManagement(created.id);
+    expect(full?.uploadedFiles).toEqual({
+      "index.html": { contentBase64: "aGVsbG8=", contentType: "text/html" },
+    });
+  });
+
+  it("moves a version's content out of the list too, keeping only hasContent as a marker", async () => {
+    const { createProject, getAllProjects, getProjectVersionContent, updateProject } = await import(
+      "@/lib/store"
+    );
+    const created = await createProject({
+      ...baseSubmission,
+      uploadedHtml: "<p>v1</p>",
+    });
+    const versionId = "11111111-1111-1111-1111-111111111111";
+    await updateProject(created.id, {
+      ...baseSubmission,
+      status: "pending_review",
+      uploadedHtml: "<p>v2</p>",
+      versions: [
+        { id: versionId, savedAt: new Date().toISOString(), launchUrl: created.launchUrl, uploadedHtml: "<p>v1</p>" },
+      ],
+    });
+
+    const all = await getAllProjects();
+    const listed = all.find((p) => p.id === created.id);
+    expect(listed?.versions).toHaveLength(1);
+    expect(listed?.versions?.[0].uploadedHtml).toBeUndefined();
+    expect(listed?.versions?.[0].hasContent).toBe(true);
+
+    const versionContent = await getProjectVersionContent(created.id, versionId);
+    expect(versionContent?.uploadedHtml).toBe("<p>v1</p>");
+  });
+
+  it("cleans up a deleted project's content and its versions' content", async () => {
+    const { createProject, deleteProjects, getProjectVersionContent, updateProject } = await import(
+      "@/lib/store"
+    );
+    const created = await createProject({ ...baseSubmission, uploadedHtml: "<p>current</p>" });
+    const versionId = "22222222-2222-2222-2222-222222222222";
+    await updateProject(created.id, {
+      ...baseSubmission,
+      status: "pending_review",
+      uploadedHtml: "<p>new</p>",
+      versions: [
+        { id: versionId, savedAt: new Date().toISOString(), launchUrl: created.launchUrl, uploadedHtml: "<p>current</p>" },
+      ],
+    });
+
+    await deleteProjects([created.id]);
+
+    const { getProjectByIdForManagement } = await import("@/lib/store");
+    expect(await getProjectByIdForManagement(created.id)).toBeUndefined();
+    expect(await getProjectVersionContent(created.id, versionId)).toBeUndefined();
+  });
+
+  it("migrates a pre-split record (content still inline) transparently on first read", async () => {
+    const { readFile, writeFile } = await import("node:fs/promises");
+    const id = "33333333-3333-3333-3333-333333333333";
+    const oldFormatProject = {
+      ...baseSubmission,
+      id,
+      status: "on_display",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      uploadedHtml: "<p>legacy inline content</p>",
+    };
+    await writeFile(process.env.PROJECTS_DATA_FILE!, JSON.stringify([oldFormatProject], null, 2), "utf-8");
+
+    const { getAllProjects, getProjectByIdForManagement } = await import("@/lib/store");
+    const listed = await getAllProjects();
+    // The migration should have stripped it out of the list read itself...
+    expect(listed[0].uploadedHtml).toBeUndefined();
+    // ...without losing it: a single lookup still finds the real content.
+    const full = await getProjectByIdForManagement(id);
+    expect(full?.uploadedHtml).toBe("<p>legacy inline content</p>");
+
+    // And the migration actually rewrote the on-disk file, not just the
+    // in-memory result — a second, independent read should find it already
+    // stripped, with nothing left to migrate.
+    const raw = await readFile(process.env.PROJECTS_DATA_FILE!, "utf-8");
+    const stored = JSON.parse(raw);
+    expect(stored[0].uploadedHtml).toBeUndefined();
   });
 });
 

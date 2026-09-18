@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { hasValidTeacherSession } from "@/lib/auth";
 import { serveUpload } from "@/lib/serveUpload";
 import { getStudentSession } from "@/lib/studentAuth";
-import { getProjectByIdForManagement } from "@/lib/store";
+import { getProjectByIdForManagement, getProjectVersionContent } from "@/lib/store";
 
 /**
  * Serves one past version of a project's launch content (see
@@ -42,6 +42,12 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
+  // The version's own uploadedFiles/uploadedHtml live in their own storage
+  // key, not inline on `version` itself (see lib/store.ts's content-storage
+  // section) — kept separate for the same reason a project's *current*
+  // content is, so listing a project's version history never has to
+  // transfer every past upload just to show a timestamp.
+  const content = await getProjectVersionContent(id, versionId);
   const requestedPath = path && path.length > 0 ? path.map(decodeURIComponent).join("/") : undefined;
-  return serveUpload(version, requestedPath);
+  return serveUpload({ ...version, ...content }, requestedPath);
 }

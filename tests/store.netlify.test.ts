@@ -10,6 +10,9 @@ vi.mock("@netlify/blobs", () => ({
     setJSON: async (key: string, value: unknown) => {
       blobData.set(key, value);
     },
+    delete: async (key: string) => {
+      blobData.delete(key);
+    },
   }),
 }));
 
@@ -66,6 +69,51 @@ describe("store on Netlify (Blobs backend)", () => {
     await updateProject(created.id, { ...baseSubmission, status: "on_display" });
     const found = await getPublicProjectById(created.id);
     expect(found?.status).toBe("on_display");
+  });
+
+  it("keeps uploaded content out of the main projects blob, in its own Blobs key", async () => {
+    const { createProject, getProjectByIdForManagement } = await import("@/lib/store");
+    const created = await createProject({ ...baseSubmission, uploadedHtml: "<p>hi</p>" });
+
+    const rawList = blobData.get("projects") as { id: string; uploadedHtml?: string }[];
+    expect(rawList.find((p) => p.id === created.id)?.uploadedHtml).toBeUndefined();
+    expect((blobData.get(created.id) as { uploadedHtml?: string })?.uploadedHtml).toBe("<p>hi</p>");
+
+    const full = await getProjectByIdForManagement(created.id);
+    expect(full?.uploadedHtml).toBe("<p>hi</p>");
+  });
+
+  it("migrates a pre-split record already sitting in Blobs (old format) on first read", async () => {
+    const id = "44444444-4444-4444-4444-444444444444";
+    blobData.set("projects", [
+      {
+        ...baseSubmission,
+        id,
+        status: "on_display",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        uploadedHtml: "<p>legacy inline content</p>",
+      },
+    ]);
+
+    const { getAllProjects, getProjectByIdForManagement } = await import("@/lib/store");
+    const listed = await getAllProjects();
+    expect(listed[0].uploadedHtml).toBeUndefined();
+
+    const full = await getProjectByIdForManagement(id);
+    expect(full?.uploadedHtml).toBe("<p>legacy inline content</p>");
+
+    const storedList = blobData.get("projects") as { uploadedHtml?: string }[];
+    expect(storedList[0].uploadedHtml).toBeUndefined();
+  });
+
+  it("removes a deleted project's content key too", async () => {
+    const { createProject, deleteProjects } = await import("@/lib/store");
+    const created = await createProject({ ...baseSubmission, uploadedHtml: "<p>hi</p>" });
+    expect(blobData.has(created.id)).toBe(true);
+
+    await deleteProjects([created.id]);
+    expect(blobData.has(created.id)).toBe(false);
   });
 });
 
