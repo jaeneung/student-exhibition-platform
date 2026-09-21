@@ -1,17 +1,18 @@
 import type { Locale } from "./i18n";
 
 const ko = {
-  brand: { name: "KIS 디지털 프로젝트 전시관" },
+  brand: { name: "디지털 프로젝트 전시관" },
   nav: {
     gallery: "전시 둘러보기",
     guide: "제출 가이드",
     submit: "프로젝트 제출하기",
     myProjects: "내 프로젝트",
+    shorts: "민평통 숏폼",
     manage: "프로젝트 관리 (교사용)",
     ariaLabel: "주요 메뉴",
   },
   language: { ariaLabel: "언어 선택", ko: "한국어", en: "English" },
-  footer: "🎓 KIS 디지털 프로젝트 전시관 · Vibe Coding으로 만든 학생 작품을 소개합니다",
+  footer: "🎓 디지털 프로젝트 전시관 · Vibe Coding으로 만든 학생 작품을 소개합니다",
   skipLink: "본문으로 바로가기",
   categories: {
     웹사이트: "웹사이트",
@@ -21,6 +22,7 @@ const ko = {
     인터랙티브: "인터랙티브",
     CSA: "CSA",
     로보틱스: "로보틱스",
+    "민평통 숏폼": "민평통 숏폼",
     기타: "기타",
   } as Record<string, string>,
   gallery: {
@@ -34,6 +36,18 @@ const ko = {
     noResultsTitle: "검색 결과가 없어요",
     noResultsMessage: "다른 검색어나 필터로 다시 시도해 보세요.",
     clearFilters: "필터 초기화",
+  },
+  shorts: {
+    badge: "🎬 민평통 숏폼",
+    title: "민평통 숏폼",
+    subtitle: "민주평화통일자문회의(민평통) 활동을 담은 학생들의 짧은 영상을 모았어요.",
+    countLabel: "현재 {count}개 영상 전시중",
+    howToTitle: "영상은 이렇게 올려요",
+    howToBody:
+      "유튜브 쇼츠, 인스타그램 릴스 등에 영상을 먼저 올린 뒤, 그 링크를 프로젝트 제출 화면에서 카테고리 '민평통 숏폼'을 선택하고 실행 링크로 입력해 주세요.",
+    howToLink: "지금 제출하기 →",
+    emptyTitle: "아직 올라온 영상이 없어요",
+    emptyMessage: "곧 학생들의 숏폼 영상이 올라올 예정이에요. 잠시 후 다시 확인해 주세요.",
   },
   search: {
     ariaLabel: "전시 프로젝트 검색 및 필터",
@@ -357,17 +371,18 @@ const ko = {
 export type Dictionary = typeof ko;
 
 const en: Dictionary = {
-  brand: { name: "KIS Digital Project Showcase" },
+  brand: { name: "Digital Project Showcase" },
   nav: {
     gallery: "Browse Exhibits",
     guide: "Submission Guide",
     submit: "Submit a Project",
     myProjects: "My Projects",
+    shorts: "민평통 Shorts",
     manage: "Manage Projects (Staff)",
     ariaLabel: "Main menu",
   },
   language: { ariaLabel: "Choose language", ko: "한국어", en: "English" },
-  footer: "🎓 KIS Digital Project Showcase · Featuring student work built with vibe coding",
+  footer: "🎓 Digital Project Showcase · Featuring student work built with vibe coding",
   skipLink: "Skip to main content",
   categories: {
     웹사이트: "Website",
@@ -377,6 +392,7 @@ const en: Dictionary = {
     인터랙티브: "Interactive",
     CSA: "CSA",
     로보틱스: "Robotics",
+    "민평통 숏폼": "민평통 Shorts",
     기타: "Other",
   },
   gallery: {
@@ -390,6 +406,18 @@ const en: Dictionary = {
     noResultsTitle: "No results found",
     noResultsMessage: "Try a different search term or filter.",
     clearFilters: "Clear filters",
+  },
+  shorts: {
+    badge: "🎬 민평통 Shorts",
+    title: "민평통 Shorts",
+    subtitle: "Short videos from students documenting 민평통 (National Unification Advisory Council) activities.",
+    countLabel: "{count} video(s) currently on display",
+    howToTitle: "How to submit a video",
+    howToBody:
+      "Upload your video to YouTube Shorts, Instagram Reels, or similar first, then go to the submission form, pick the '민평통 숏폼' category, and paste that link as your launch link.",
+    howToLink: "Submit now →",
+    emptyTitle: "No videos yet",
+    emptyMessage: "Students' short videos will be featured here soon. Please check back shortly.",
   },
   search: {
     ariaLabel: "Search and filter exhibits",

@@ -11,6 +11,7 @@ const CATEGORY_STYLES: Record<ProjectCategory, { icon: string; gradient: string 
   인터랙티브: { icon: "✨", gradient: "from-amber-400 to-orange-600" },
   CSA: { icon: "💻", gradient: "from-cyan-400 to-blue-700" },
   로보틱스: { icon: "🦾", gradient: "from-rose-400 to-red-600" },
+  "민평통 숏폼": { icon: "🎬", gradient: "from-pink-400 to-rose-600" },
   기타: { icon: "📦", gradient: "from-slate-400 to-slate-600" },
 };
 

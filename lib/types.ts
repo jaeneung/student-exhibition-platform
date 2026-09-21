@@ -14,10 +14,19 @@ export const PROJECT_CATEGORIES = [
   "인터랙티브",
   "CSA",
   "로보틱스",
+  "민평통 숏폼",
   "기타",
 ] as const;
 
 export type ProjectCategory = (typeof PROJECT_CATEGORIES)[number];
+
+/** Gets its own dedicated page (app/shorts/page.tsx) instead of appearing in
+ * the main gallery — see that page's top comment for why. Submissions still
+ * go through the same /submit form as everything else; a student just picks
+ * this category and pastes a link (see lib/formAction.ts — nothing in the
+ * submission pipeline treats this category specially, only where it's
+ * *displayed* differs). */
+export const SHORTS_CATEGORY: ProjectCategory = "민평통 숏폼";
 
 export const PROJECT_GRADES = ["G6", "G7", "G8", "G9", "G10", "G11", "G12"] as const;
 

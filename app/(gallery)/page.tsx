@@ -15,7 +15,7 @@ import { getLocale } from "@/lib/i18n";
 import { getRequestOrigin } from "@/lib/origin";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getAllProjects } from "@/lib/store";
-import { PROJECT_CATEGORIES } from "@/lib/types";
+import { PROJECT_CATEGORIES, SHORTS_CATEGORY } from "@/lib/types";
 
 function firstValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
@@ -38,8 +38,15 @@ export default async function GalleryPage({
   // the tag facets offered, the tag actually being filtered on, and the tag
   // text shown on cards are all the same English string — filtering by a
   // free-text field like tags only works if all three agree.
+  //
+  // SHORTS_CATEGORY is excluded here, not just left to filter naturally —
+  // it has its own dedicated page (app/shorts/page.tsx) instead of living in
+  // this general gallery at all, so it's never counted, faceted, or shown
+  // here regardless of what a visitor filters by.
   const rawProjects = await getAllProjects();
-  const allProjects = rawProjects.map((p) => localizeProject(p, locale));
+  const allProjects = rawProjects
+    .filter((p) => p.category !== SHORTS_CATEGORY)
+    .map((p) => localizeProject(p, locale));
   const projects = filterPublicProjects(allProjects, { q, category, tag, grade });
 
   // Every defined category, not just ones an on_display project currently
@@ -47,7 +54,7 @@ export default async function GalleryPage({
   // data-driven) — so a category like CSA or 로보틱스 still shows up as a
   // filter option before the first project in it goes on display, instead
   // of silently disappearing from the gallery until then.
-  const categories: string[] = [...PROJECT_CATEGORIES];
+  const categories: string[] = PROJECT_CATEGORIES.filter((c) => c !== SHORTS_CATEGORY);
   const tags = getTagFacets(allProjects);
   const grades = getGradeFacets(allProjects);
   const onDisplayCount = getOnDisplayProjects(allProjects).length;
