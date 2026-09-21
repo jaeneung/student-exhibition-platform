@@ -13,7 +13,6 @@ export async function Header() {
     { href: "/guide", label: dict.nav.guide },
     { href: "/submit", label: dict.nav.submit },
     { href: "/my", label: dict.nav.myProjects },
-    { href: "/shorts", label: dict.nav.shorts },
     { href: "/manage", label: dict.nav.manage },
   ];
 
@@ -34,6 +33,18 @@ export async function Header() {
         </Link>
         <div className="flex flex-wrap items-center gap-2">
           <HeaderNav ariaLabel={dict.nav.ariaLabel} links={links} />
+          {/* Deliberately not a regular nav tab: 민평통 숏폼 shouldn't read as
+              part of the main exhibition alongside Gallery/Submit/etc. — a
+              small, visually distinct "+" link is the only way in, so
+              landing here always takes a deliberate extra click. */}
+          <Link
+            href="/shorts"
+            title={dict.nav.shorts}
+            aria-label={dict.nav.shorts}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-dashed border-zinc-300 text-lg font-semibold text-zinc-500 transition hover:border-brand-400 hover:text-brand-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-brand-500 dark:hover:text-brand-400"
+          >
+            <span aria-hidden="true">+</span>
+          </Link>
           <LanguageToggle
             locale={locale}
             ariaLabel={dict.language.ariaLabel}
