@@ -140,6 +140,7 @@ const ko = {
     launchExistingSingle: "📎 현재 업로드된 파일: {name}",
     launchExistingHtml: "📎 현재 업로드된 HTML 페이지가 있어요.",
     launchExistingMulti: "📎 현재 업로드된 사이트: {entry} 외 {extraCount}개 파일",
+    launchPreviewLink: "미리보기 →",
     launchFileHtmlOnlyWarning:
       "HTML 파일 하나만 올렸어요. 이 파일 안에서 이미지나 동영상을 상대경로로 불러온다면(예: <img src=\"photo.png\">) 전시관에서는 보이지 않아요. 이미지나 동영상이 있다면 위의 '📂 폴더 업로드'나 ZIP 파일 업로드를 사용해 주세요.",
     launchFileTooLargeWarning:
@@ -183,6 +184,7 @@ const ko = {
     emptyTitle: "아직 제출된 프로젝트가 없어요",
     emptyMessage: "학생이 프로젝트를 제출하면 여기에서 검토할 수 있어요.",
     editLink: "상세 수정",
+    previewLink: "👁️ 미리보기",
     switchTo: "{status}(으)로 전환",
     editTitle: "프로젝트 수정",
     backToManage: "← 프로젝트 관리로 돌아가기",
@@ -510,6 +512,7 @@ const en: Dictionary = {
     launchExistingSingle: "📎 Currently uploaded: {name}",
     launchExistingHtml: "📎 An HTML page is currently uploaded.",
     launchExistingMulti: "📎 Currently uploaded site: {entry} + {extraCount} more file(s)",
+    launchPreviewLink: "Preview →",
     launchFileHtmlOnlyWarning:
       "You uploaded a single HTML file. If it loads any images or video by a relative path (like <img src=\"photo.png\">), those won't show up in the gallery. If your project uses any, use '📂 Upload a Folder' above or a .zip instead.",
     launchFileTooLargeWarning:
@@ -552,6 +555,7 @@ const en: Dictionary = {
     emptyTitle: "No projects submitted yet",
     emptyMessage: "Once a student submits a project, you'll be able to review it here.",
     editLink: "Edit Details",
+    previewLink: "👁️ Preview",
     switchTo: "Switch to {status}",
     editTitle: "Edit Project",
     backToManage: "← Back to Manage Projects",

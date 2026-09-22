@@ -545,11 +545,23 @@ export function ProjectForm({
             error={errors.launchFile}
           >
             {(existingUpload?.kind === "single" || existingUpload?.kind === "html") && (
-              <p className="rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                {existingUpload.kind === "single"
-                  ? format(f.launchExistingSingle, { name: existingUpload.name })
-                  : f.launchExistingHtml}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                <span>
+                  {existingUpload.kind === "single"
+                    ? format(f.launchExistingSingle, { name: existingUpload.name })
+                    : f.launchExistingHtml}
+                </span>
+                {project?.launchUrl && (
+                  <a
+                    href={project.launchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 font-semibold text-brand-700 hover:underline dark:text-brand-400"
+                  >
+                    {f.launchPreviewLink}
+                  </a>
+                )}
+              </div>
             )}
             <input
               id="launchFile"
@@ -634,12 +646,24 @@ export function ProjectForm({
             error={errors.launchFile}
           >
             {existingUpload?.kind === "multi" && (
-              <p className="rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                {format(f.launchExistingMulti, {
-                  entry: existingUpload.entry,
-                  extraCount: existingUpload.extraCount,
-                })}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                <span>
+                  {format(f.launchExistingMulti, {
+                    entry: existingUpload.entry,
+                    extraCount: existingUpload.extraCount,
+                  })}
+                </span>
+                {project?.launchUrl && (
+                  <a
+                    href={project.launchUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="shrink-0 font-semibold text-brand-700 hover:underline dark:text-brand-400"
+                  >
+                    {f.launchPreviewLink}
+                  </a>
+                )}
+              </div>
             )}
             <input
               ref={setFolderPickerAttrs}
