@@ -1,17 +1,19 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { CategoryRulesForm } from "@/components/CategoryRulesForm";
 import { CheckLinksButton } from "@/components/CheckLinksButton";
 import { EmptyState } from "@/components/EmptyState";
 import { LinkBrokenBadge } from "@/components/LinkBrokenBadge";
 import { ManagePrivateSection } from "@/components/ManagePrivateSection";
 import { StatusBadge } from "@/components/StatusBadge";
+import { getCategoryRules } from "@/lib/categoryConfig";
 import { getTeacherUsername, hasValidTeacherSession } from "@/lib/auth";
 import { getCategoryStyle } from "@/lib/categoryStyles";
 import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getAllProjects } from "@/lib/store";
-import { EXHIBITION_STATUSES, type ExhibitionStatus } from "@/lib/types";
+import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, type ExhibitionStatus } from "@/lib/types";
 import { changeStatusAction, logoutAction } from "../actions";
 
 // "private" is rendered separately below via ManagePrivateSection (collapsible,
@@ -38,6 +40,7 @@ export default async function ManagePage() {
   const dict = getDictionary(locale);
   const projects = (await getAllProjects()).map((p) => localizeProject(p, locale));
   const username = getTeacherUsername();
+  const categoryRules = await getCategoryRules();
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -79,6 +82,8 @@ export default async function ManagePage() {
           {dict.manage.mvpNoticeText}
         </p>
       </div>
+
+      <CategoryRulesForm dict={dict} categories={[...PROJECT_CATEGORIES]} rules={categoryRules} />
 
       {projects.length === 0 ? (
         <EmptyState icon="🗂️" title={dict.manage.emptyTitle} message={dict.manage.emptyMessage} />

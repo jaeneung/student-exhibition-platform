@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME, requireTeacherSession } from "@/lib/auth";
+import { saveCategoryRules } from "@/lib/categoryConfig";
 import { getDictionary } from "@/lib/dictionary";
 import {
   buildSubmittedValues,
@@ -25,7 +26,7 @@ import {
   updateLinkStatuses,
   updateProject,
 } from "@/lib/store";
-import type { ExhibitionStatus, Project, ProjectUpdateInput } from "@/lib/types";
+import { PROJECT_CATEGORIES, type ExhibitionStatus, type Project, type ProjectUpdateInput } from "@/lib/types";
 
 export async function logoutAction(): Promise<void> {
   const store = await cookies();
@@ -187,4 +188,22 @@ export async function checkAllProjectLinksAction(): Promise<{
     checkedCount: results.length,
     brokenCount: results.filter((r) => !r.ok).length,
   };
+}
+
+/** Saves every category's submission rules at once from the /manage form.
+ * Checkbox fields are named `file:<category>` and `omit:<category>`; an
+ * unchecked box is simply absent from the form data, so absent means off. */
+export async function saveCategoryRulesAction(formData: FormData): Promise<void> {
+  await requireTeacherSession();
+  const rules: Record<string, { allowFileUpload: boolean; allowTitleOmission: boolean }> = {};
+  for (const category of PROJECT_CATEGORIES) {
+    rules[category] = {
+      allowFileUpload: formData.get(`file:${category}`) === "on",
+      allowTitleOmission: formData.get(`omit:${category}`) === "on",
+    };
+  }
+  await saveCategoryRules(rules);
+  revalidatePath("/manage");
+  revalidatePath("/submit");
+  revalidatePath("/my");
 }

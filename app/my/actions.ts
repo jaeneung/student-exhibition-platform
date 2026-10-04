@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { getCategoryRules, DEFAULT_CATEGORY_RULE, resolveTitle } from "@/lib/categoryConfig";
 import { getDictionary } from "@/lib/dictionary";
 import {
   buildSubmittedValues,
@@ -17,6 +18,7 @@ import { getRequestOrigin } from "@/lib/origin";
 import { getSubmissionSchema } from "@/lib/schema";
 import { getProjectByIdForManagement, updateProject } from "@/lib/store";
 import { requireStudentSession } from "@/lib/studentAuth";
+import { getStudentById } from "@/lib/studentStore";
 import type { ProjectVersion } from "@/lib/types";
 
 // Old launch-field snapshots are kept for viewing only (no revert), capped
@@ -33,7 +35,16 @@ export async function updateOwnProjectAction(
   const studentId = await requireStudentSession(`/my/${id}/edit`);
   const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
-  const parsed = getSubmissionSchema(dict).safeParse(raw);
+  const rule = (await getCategoryRules())[raw.category] ?? DEFAULT_CATEGORY_RULE;
+  const submitter = await getStudentById(studentId);
+  const parsed = getSubmissionSchema(dict).safeParse({
+    ...raw,
+    title: resolveTitle(raw.title, rule, submitter?.username),
+  });
+  const launchModeValue = formData.get("launchMode")?.toString() ?? "url";
+  if (!rule.allowFileUpload && launchModeValue !== "url") {
+    return { status: "error", errors: { launchFile: dict.validation.fileUploadNotAllowed }, values: buildSubmittedValues(raw, formData) };
+  }
   const existingProject = await getProjectByIdForManagement(id);
 
   if (!existingProject || existingProject.ownerId !== studentId) {

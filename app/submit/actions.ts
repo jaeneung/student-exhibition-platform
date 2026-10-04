@@ -15,8 +15,10 @@ import {
 import { getLocale } from "@/lib/i18n";
 import { getRequestOrigin } from "@/lib/origin";
 import { getSubmissionSchema } from "@/lib/schema";
+import { getCategoryRules, DEFAULT_CATEGORY_RULE, resolveTitle } from "@/lib/categoryConfig";
 import { createProject, DuplicateSubmissionError } from "@/lib/store";
 import { requireStudentSession } from "@/lib/studentAuth";
+import { getStudentById } from "@/lib/studentStore";
 
 export async function submitProjectAction(
   _prevState: FormActionState,
@@ -29,7 +31,21 @@ export async function submitProjectAction(
   const ownerId = await requireStudentSession("/submit");
   const dict = getDictionary(await getLocale());
   const raw = readProjectFormData(formData);
-  const parsed = getSubmissionSchema(dict).safeParse(raw);
+  const rule = (await getCategoryRules())[raw.category] ?? DEFAULT_CATEGORY_RULE;
+  const submitter = await getStudentById(ownerId);
+  const parsed = getSubmissionSchema(dict).safeParse({
+    ...raw,
+    title: resolveTitle(raw.title, rule, submitter?.username),
+  });
+
+  const launchModeValue = formData.get("launchMode")?.toString() ?? "url";
+  if (!rule.allowFileUpload && launchModeValue !== "url") {
+    return {
+      status: "error",
+      errors: { launchFile: dict.validation.fileUploadNotAllowed },
+      values: buildSubmittedValues(raw, formData),
+    };
+  }
 
   // Generated up front (rather than inside createProject, as usual) because
   // an uploaded file's own launchUrl is /files/{id} — the id has to exist

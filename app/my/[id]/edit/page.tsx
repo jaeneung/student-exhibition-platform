@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ProjectForm } from "@/components/ProjectForm";
+import { getCategoryRules } from "@/lib/categoryConfig";
 import { getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { getProjectByIdForManagement } from "@/lib/store";
@@ -55,6 +56,7 @@ export default async function EditOwnProjectPage({
         action={updateOwnProjectAction.bind(null, project.id)}
         project={project}
         submitLabel={dict.my.editSubmitLabel}
+        categoryRules={await getCategoryRules()}
       />
     </div>
   );

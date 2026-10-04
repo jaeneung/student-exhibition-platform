@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProjectForm } from "@/components/ProjectForm";
+import { getCategoryRules } from "@/lib/categoryConfig";
 import { getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { requireStudentSession } from "@/lib/studentAuth";
@@ -28,7 +29,12 @@ export default async function SubmitPage() {
           {dict.submitPage.guideLink}
         </Link>
       </div>
-      <ProjectForm dict={dict} action={submitProjectAction} submitLabel={dict.submitPage.submitLabel} />
+      <ProjectForm
+        dict={dict}
+        action={submitProjectAction}
+        submitLabel={dict.submitPage.submitLabel}
+        categoryRules={await getCategoryRules()}
+      />
     </div>
   );
 }

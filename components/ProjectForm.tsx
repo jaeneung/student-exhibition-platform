@@ -5,6 +5,11 @@ import { format, type Dictionary } from "@/lib/dictionary";
 import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, PROJECT_GRADES } from "@/lib/types";
 import type { ExhibitionStatus, Project } from "@/lib/types";
 import type { FormActionState } from "@/lib/formAction";
+import type { CategoryRule } from "@/lib/categoryConfig";
+
+// Mirrors DEFAULT_CATEGORY_RULE in lib/categoryConfig.ts — that module is
+// server-only, so the client can't import it.
+const DEFAULT_RULE: CategoryRule = { allowFileUpload: true, allowTitleOmission: false };
 import { MAX_GITHUB_RELAY_BYTES, MAX_UPLOAD_BYTES, MEDIA_UPLOAD_CHUNK_BYTES } from "@/lib/uploadLimits";
 
 function formatMb(bytes: number): string {
@@ -214,12 +219,16 @@ export function ProjectForm({
   project,
   includeStatus = false,
   submitLabel,
+  categoryRules,
 }: {
   dict: Dictionary;
   action: (prevState: FormActionState, formData: FormData) => Promise<FormActionState>;
   project?: Project;
   includeStatus?: boolean;
   submitLabel: string;
+  /** Student-side submit/edit only. The teacher's own edit form omits this
+   * and isn't restricted by it. */
+  categoryRules?: Record<string, CategoryRule>;
 }) {
   const [state, formAction, isPending] = useActionState<FormActionState, FormData>(action, {
     status: "idle",
@@ -243,6 +252,13 @@ export function ProjectForm({
     (errorValues?.launchMode as "url" | "file" | "folder" | undefined) ??
       (existingUpload?.kind === "multi" ? "folder" : hasExistingUpload ? "file" : "url")
   );
+  const [selectedCategory, setSelectedCategory] = useState<string>(
+    errorValues?.category || project?.category || ""
+  );
+  const rule = categoryRules ? (categoryRules[selectedCategory] ?? DEFAULT_RULE) : undefined;
+  const allowFile = rule?.allowFileUpload ?? true;
+  const omitTitle = rule?.allowTitleOmission ?? false;
+  const activeLaunchMode = allowFile ? launchMode : "url";
   const [folderPaths, setFolderPaths] = useState<string[]>([]);
   const [singleFileName, setSingleFileName] = useState<string | undefined>(undefined);
   const isHtmlOnlySelected = launchMode === "file" && Boolean(singleFileName && /\.html?$/i.test(singleFileName));
@@ -393,12 +409,18 @@ export function ProjectForm({
       <FormSection icon="📌" title={f.requiredSectionTitle}>
         <p className="-mt-1 text-sm text-zinc-500 dark:text-zinc-400">{f.requiredSectionHint}</p>
 
-        <Field id="title" label={f.title} required error={errors.title}>
+        <Field
+          id="title"
+          label={f.title}
+          required={!omitTitle}
+          hint={omitTitle ? f.titleOmitHint : undefined}
+          error={errors.title}
+        >
           <input
             id="title"
             name="title"
             type="text"
-            required
+            required={!omitTitle}
             defaultValue={errorValues?.title ?? project?.title}
             aria-invalid={Boolean(errors.title)}
             aria-describedby={errors.title ? "title-error" : undefined}
@@ -426,7 +448,14 @@ export function ProjectForm({
             id="category"
             name="category"
             required
-            defaultValue={errorValues?.category || project?.category || ""}
+            value={selectedCategory}
+            onChange={(e) => {
+              const next = e.target.value;
+              setSelectedCategory(next);
+              if (categoryRules && !(categoryRules[next] ?? DEFAULT_RULE).allowFileUpload) {
+                setLaunchMode("url");
+              }
+            }}
             aria-invalid={Boolean(errors.category)}
             aria-describedby={errors.category ? "category-error" : undefined}
             className={inputClass}
@@ -483,11 +512,11 @@ export function ProjectForm({
             </span>
           </span>
           <div role="radiogroup" aria-label={f.launchMode} className="flex flex-wrap gap-2">
-            {(["url", "file", "folder"] as const).map((m) => (
+            {(allowFile ? (["url", "file", "folder"] as const) : (["url"] as const)).map((m) => (
               <label
                 key={m}
                 className={`flex-1 cursor-pointer rounded-xl border px-3 py-2.5 text-center text-sm font-medium transition ${
-                  launchMode === m
+                  activeLaunchMode === m
                     ? "border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-950 dark:text-brand-300"
                     : "border-zinc-300 text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 }`}
@@ -496,7 +525,7 @@ export function ProjectForm({
                   type="radio"
                   name="launchMode"
                   value={m}
-                  checked={launchMode === m}
+                  checked={activeLaunchMode === m}
                   onChange={() => {
                     setLaunchMode(m);
                     setOversizeBytes(undefined);
@@ -515,7 +544,7 @@ export function ProjectForm({
           <p className="text-xs text-zinc-500 dark:text-zinc-400">{f.launchModeNote}</p>
         </div>
 
-        {launchMode === "url" ? (
+        {activeLaunchMode === "url" ? (
           <Field id="launchUrl" label={f.launchUrl} required hint={f.launchUrlHint} error={errors.launchUrl}>
             <input
               id="launchUrl"
@@ -536,7 +565,7 @@ export function ProjectForm({
               <p className="text-xs text-emerald-700 dark:text-emerald-400">{f.mediaRelaySuccess}</p>
             )}
           </Field>
-        ) : launchMode === "file" ? (
+        ) : activeLaunchMode === "file" ? (
           <Field
             id="launchFile"
             label={f.launchFile}
