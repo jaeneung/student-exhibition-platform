@@ -256,7 +256,15 @@ export function ProjectForm({
     errorValues?.category || project?.category || ""
   );
   const rule = categoryRules ? (categoryRules[selectedCategory] ?? DEFAULT_RULE) : undefined;
-  const allowFile = rule?.allowFileUpload ?? true;
+  // A category rule that disallows file uploads only blocks *introducing* a
+  // new one — a student who already has a file/folder-based submission in
+  // that category (teacher turned the rule off after the fact) must still
+  // be able to open the edit form, keep or replace that upload, and save
+  // unrelated changes, or they'd be locked out of editing their own project
+  // and, worse, pressured into typing some URL just to get past a required
+  // field they can't otherwise satisfy — which would silently replace their
+  // real upload with a link (see resolveLaunchFields's url branch).
+  const allowFile = (rule?.allowFileUpload ?? true) || hasExistingUpload;
   const omitTitle = rule?.allowTitleOmission ?? false;
   const activeLaunchMode = allowFile ? launchMode : "url";
   const [folderPaths, setFolderPaths] = useState<string[]>([]);

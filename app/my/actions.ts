@@ -41,14 +41,22 @@ export async function updateOwnProjectAction(
     ...raw,
     title: resolveTitle(raw.title, rule, submitter?.username),
   });
-  const launchModeValue = formData.get("launchMode")?.toString() ?? "url";
-  if (!rule.allowFileUpload && launchModeValue !== "url") {
-    return { status: "error", errors: { launchFile: dict.validation.fileUploadNotAllowed }, values: buildSubmittedValues(raw, formData) };
-  }
   const existingProject = await getProjectByIdForManagement(id);
 
   if (!existingProject || existingProject.ownerId !== studentId) {
     return { status: "error", formError: dict.my.editNotFound };
+  }
+
+  // A rule turned off *after* a student already has a file/folder upload in
+  // that category must not block them from editing (or re-uploading) it —
+  // only from starting a brand-new one. Otherwise they couldn't save even an
+  // unrelated text change without first being forced into URL mode, which
+  // (per resolveLaunchFields) would replace their real upload with whatever
+  // link they typed just to satisfy the now-required field.
+  const existingIsUploadBased = Boolean(existingProject.uploadedFiles || existingProject.uploadedHtml);
+  const launchModeValue = formData.get("launchMode")?.toString() ?? "url";
+  if (!rule.allowFileUpload && launchModeValue !== "url" && !existingIsUploadBased) {
+    return { status: "error", errors: { launchFile: dict.validation.fileUploadNotAllowed }, values: buildSubmittedValues(raw, formData) };
   }
 
   const fileEntry = formData.get("launchFile");
