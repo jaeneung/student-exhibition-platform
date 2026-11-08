@@ -336,3 +336,37 @@ describe("getProjectsByOwner", () => {
     expect(await getProjectsByOwner("nobody")).toEqual([]);
   });
 });
+
+describe("countUploadBasedProjects", () => {
+  it("counts only projects whose launchUrl is this app's own /files/ address, grouped by category", async () => {
+    const { countUploadBasedProjects } = await import("@/lib/store");
+    const counts = countUploadBasedProjects([
+      { ...baseSubmission, id: "1", status: "pending_review", createdAt: "", updatedAt: "", category: "웹사이트", launchUrl: "https://host/files/abc/index.html" },
+      { ...baseSubmission, id: "2", status: "pending_review", createdAt: "", updatedAt: "", category: "웹사이트", launchUrl: "https://host/files/def" },
+      { ...baseSubmission, id: "3", status: "pending_review", createdAt: "", updatedAt: "", category: "게임", launchUrl: "https://host/files/ghi" },
+      // Not an upload: an ordinary external link, even one that happens to
+      // contain "/files/" somewhere other than at the start of the path.
+      { ...baseSubmission, id: "4", status: "pending_review", createdAt: "", updatedAt: "", category: "웹사이트", launchUrl: "https://example.com/my-files/thing" },
+      { ...baseSubmission, id: "5", status: "pending_review", createdAt: "", updatedAt: "", category: "앱", launchUrl: "https://example.com" },
+    ]);
+    expect(counts).toEqual({ "웹사이트": 2, "게임": 1 });
+  });
+
+  it("returns an empty object when nothing is upload-based", async () => {
+    const { countUploadBasedProjects } = await import("@/lib/store");
+    expect(
+      countUploadBasedProjects([
+        { ...baseSubmission, id: "1", status: "pending_review", createdAt: "", updatedAt: "", launchUrl: "https://example.com" },
+      ])
+    ).toEqual({});
+  });
+
+  it("doesn't throw on a malformed launchUrl", async () => {
+    const { countUploadBasedProjects } = await import("@/lib/store");
+    expect(
+      countUploadBasedProjects([
+        { ...baseSubmission, id: "1", status: "pending_review", createdAt: "", updatedAt: "", launchUrl: "not a url" },
+      ])
+    ).toEqual({});
+  });
+});

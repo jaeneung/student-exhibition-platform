@@ -345,6 +345,34 @@ export async function getAllProjects(): Promise<Project[]> {
   return readAll();
 }
 
+/** Whether `launchUrl` is this app's own uploaded-file address rather than
+ * an externally-typed link — resolveLaunchFields (lib/formAction.ts) always
+ * builds an upload's launchUrl as "{origin}/files/{id}" or
+ * "{origin}/files/{id}/{entryPath}", so the path alone is enough to tell,
+ * with no need to read the (separately-stored) file content itself. */
+function isUploadBasedLaunchUrl(launchUrl: string): boolean {
+  try {
+    return new URL(launchUrl).pathname.startsWith("/files/");
+  } catch {
+    return false;
+  }
+}
+
+/** Per-category counts of projects that already have a real file/folder
+ * upload — shown on /manage next to the "allow file upload" rule so a
+ * teacher can see who'd be affected *before* turning it off for a category.
+ * Turning the rule off never touches an existing upload (see
+ * updateOwnProjectAction), but the count is still the right thing to show:
+ * it's how many students could no longer start a *new* one there. */
+export function countUploadBasedProjects(projects: Project[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const project of projects) {
+    if (!isUploadBasedLaunchUrl(project.launchUrl)) continue;
+    counts[project.category] = (counts[project.category] ?? 0) + 1;
+  }
+  return counts;
+}
+
 /** Public gallery/search entry point. Always filters to "on_display" — this is
  * the server-side enforcement of the visibility rule, independent of the UI. */
 export async function getPublicProjects(

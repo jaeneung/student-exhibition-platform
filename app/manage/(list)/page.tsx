@@ -12,7 +12,7 @@ import { getCategoryStyle } from "@/lib/categoryStyles";
 import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { localizeProject } from "@/lib/projectLocalization";
-import { getAllProjects } from "@/lib/store";
+import { countUploadBasedProjects, getAllProjects } from "@/lib/store";
 import { EXHIBITION_STATUSES, PROJECT_CATEGORIES, type ExhibitionStatus } from "@/lib/types";
 import { changeStatusAction, logoutAction } from "../actions";
 
@@ -38,9 +38,11 @@ export default async function ManagePage() {
 
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const projects = (await getAllProjects()).map((p) => localizeProject(p, locale));
+  const allProjects = await getAllProjects();
+  const projects = allProjects.map((p) => localizeProject(p, locale));
   const username = getTeacherUsername();
   const categoryRules = await getCategoryRules();
+  const uploadCounts = countUploadBasedProjects(allProjects);
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
@@ -83,7 +85,12 @@ export default async function ManagePage() {
         </p>
       </div>
 
-      <CategoryRulesForm dict={dict} categories={[...PROJECT_CATEGORIES]} rules={categoryRules} />
+      <CategoryRulesForm
+        dict={dict}
+        categories={[...PROJECT_CATEGORIES]}
+        rules={categoryRules}
+        uploadCounts={uploadCounts}
+      />
 
       {projects.length === 0 ? (
         <EmptyState icon="🗂️" title={dict.manage.emptyTitle} message={dict.manage.emptyMessage} />

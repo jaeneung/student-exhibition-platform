@@ -204,6 +204,8 @@ const ko = {
     categoryRulesHint: "카테고리마다 학생이 파일을 올릴 수 있는지, 제목을 생략할 수 있는지 정할 수 있어요.",
     categoryRulesColumnCategory: "카테고리",
     categoryRulesColumnFile: "파일 업로드 허용",
+    categoryRulesUploadCount:
+      "이미 파일을 올린 프로젝트 {count}개 — 꺼도 그 학생들의 파일은 그대로 유지되고, 새로 올리는 것만 막혀요.",
     categoryRulesColumnOmitTitle: "제목 생략 허용 (아이디로 등록)",
     categoryRulesSave: "설정 저장",
     categoryRulesSaved: "카테고리 설정을 저장했어요.",
@@ -584,6 +586,8 @@ const en: Dictionary = {
     categoryRulesHint: "For each category, choose whether students can upload files and whether they can leave the title blank.",
     categoryRulesColumnCategory: "Category",
     categoryRulesColumnFile: "Allow file upload",
+    categoryRulesUploadCount:
+      "{count} project(s) already have an uploaded file — turning this off keeps those files as they are and only blocks new uploads.",
     categoryRulesColumnOmitTitle: "Allow blank title (uses username)",
     categoryRulesSave: "Save rules",
     categoryRulesSaved: "Category rules saved.",

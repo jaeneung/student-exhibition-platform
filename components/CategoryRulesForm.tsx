@@ -1,4 +1,4 @@
-import type { Dictionary } from "@/lib/dictionary";
+import { format, type Dictionary } from "@/lib/dictionary";
 import { saveCategoryRulesAction } from "@/app/manage/actions";
 import type { CategoryRule } from "@/lib/categoryConfig";
 
@@ -8,10 +8,16 @@ export function CategoryRulesForm({
   dict,
   categories,
   rules,
+  uploadCounts,
 }: {
   dict: Dictionary;
   categories: string[];
   rules: Record<string, CategoryRule>;
+  /** How many existing projects per category already have a file/folder
+   * upload (see lib/store.ts's countUploadBasedProjects) — shown next to
+   * the checkbox so a teacher can see who'd be affected *before* turning
+   * file uploads off for a category, not after. */
+  uploadCounts: Record<string, number>;
 }) {
   const m = dict.manage;
   return (
@@ -34,17 +40,25 @@ export function CategoryRulesForm({
               {categories.map((category) => {
                 const rule = rules[category];
                 const label = dict.categories[category] ?? category;
+                const uploadCount = uploadCounts[category] ?? 0;
                 return (
                   <tr key={category} className="border-b border-zinc-100 dark:border-zinc-800">
                     <th scope="row" className="py-2 pr-4 font-medium text-zinc-900 dark:text-zinc-100">{label}</th>
                     <td className="py-2 pr-4">
-                      <input
-                        type="checkbox"
-                        name={`file:${category}`}
-                        defaultChecked={rule.allowFileUpload}
-                        aria-label={`${label}: ${m.categoryRulesColumnFile}`}
-                        className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
-                      />
+                      <div className="flex flex-col gap-1">
+                        <input
+                          type="checkbox"
+                          name={`file:${category}`}
+                          defaultChecked={rule.allowFileUpload}
+                          aria-label={`${label}: ${m.categoryRulesColumnFile}`}
+                          className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+                        />
+                        {uploadCount > 0 && (
+                          <p className="text-xs text-amber-700 dark:text-amber-400">
+                            {format(m.categoryRulesUploadCount, { count: uploadCount })}
+                          </p>
+                        )}
+                      </div>
                     </td>
                     <td className="py-2">
                       <input
