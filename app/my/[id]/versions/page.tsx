@@ -6,6 +6,7 @@ import { getLocale } from "@/lib/i18n";
 import { getProjectByIdForManagement } from "@/lib/store";
 import { requireStudentSession } from "@/lib/studentAuth";
 import type { ProjectVersion } from "@/lib/types";
+import { restoreProjectVersionAction } from "../../actions";
 
 function formatDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleString(locale === "ko" ? "ko-KR" : "en-US", {
@@ -68,6 +69,9 @@ export default async function ProjectVersionsPage({
         </span>
         <h1 className="text-2xl font-bold sm:text-3xl">{dict.my.versionsTitle}</h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">{dict.my.versionsSubtitle}</p>
+        {versions.length > 0 && (
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">{dict.my.versionRestoreHint}</p>
+        )}
       </div>
 
       {versions.length === 0 ? (
@@ -95,14 +99,24 @@ export default async function ProjectVersionsPage({
               <span className="text-zinc-700 dark:text-zinc-300">
                 {format(dict.my.versionEntryLabel, { date: formatDate(version.savedAt, locale) })}
               </span>
-              <a
-                href={versionViewHref(id, version)}
-                target="_blank"
-                rel="noreferrer"
-                className="font-medium text-brand-700 hover:underline dark:text-brand-400"
-              >
-                {dict.my.versionViewLink}
-              </a>
+              <div className="flex items-center gap-3">
+                <a
+                  href={versionViewHref(id, version)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-medium text-brand-700 hover:underline dark:text-brand-400"
+                >
+                  {dict.my.versionViewLink}
+                </a>
+                <form action={restoreProjectVersionAction.bind(null, id, version.id)}>
+                  <button
+                    type="submit"
+                    className="rounded-lg border border-zinc-300 px-2.5 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    {dict.my.versionRestoreButton}
+                  </button>
+                </form>
+              </div>
             </li>
           ))}
         </ul>

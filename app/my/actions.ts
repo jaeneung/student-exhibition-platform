@@ -16,10 +16,10 @@ import {
 import { getLocale } from "@/lib/i18n";
 import { getRequestOrigin } from "@/lib/origin";
 import { getSubmissionSchema } from "@/lib/schema";
-import { getProjectByIdForManagement, updateProject } from "@/lib/store";
+import { getProjectByIdForManagement, getProjectVersionContent, updateProject } from "@/lib/store";
 import { requireStudentSession } from "@/lib/studentAuth";
 import { getStudentById } from "@/lib/studentStore";
-import type { ProjectVersion } from "@/lib/types";
+import type { Project, ProjectUpdateInput, ProjectVersion } from "@/lib/types";
 
 // Old launch-field snapshots are kept for viewing only (no revert), capped
 // here so a student who re-uploads often doesn't grow one project's stored
@@ -144,4 +144,77 @@ export async function updateOwnProjectAction(
     status: "success",
     message: needsReReview ? dict.my.fileChangedNotice : dict.validation.editSuccess,
   };
+}
+
+function toUpdateInput(project: Project): ProjectUpdateInput {
+  return {
+    title: project.title,
+    shortDescription: project.shortDescription,
+    creatorName: project.creatorName,
+    category: project.category,
+    grade: project.grade,
+    tags: project.tags,
+    coverImageUrl: project.coverImageUrl,
+    motivation: project.motivation,
+    usageInstructions: project.usageInstructions,
+    safetyNotes: project.safetyNotes,
+    technologies: project.technologies,
+    launchUrl: project.launchUrl,
+    uploadedHtml: project.uploadedHtml,
+    uploadedFiles: project.uploadedFiles,
+    entryPath: project.entryPath,
+    status: project.status,
+    handsOnAvailable: project.handsOnAvailable,
+  };
+}
+
+/** Restores an older launch-field snapshot (see app/my/[id]/versions/page.tsx)
+ * as the project's current one. Deliberately not destructive either way: the
+ * state being replaced is itself snapshotted into the version list first, so
+ * restoring an old version never loses the version it replaces — it's just
+ * another kind of launch-content edit, and is subject to the exact same
+ * re-review rule as a normal file replacement (see updateOwnProjectAction
+ * above) since a visitor-facing link or file is changing either way. */
+export async function restoreProjectVersionAction(id: string, versionId: string): Promise<void> {
+  const studentId = await requireStudentSession(`/my/${id}/versions`);
+  const existingProject = await getProjectByIdForManagement(id);
+  if (!existingProject || existingProject.ownerId !== studentId) return;
+
+  const version = existingProject.versions?.find((v) => v.id === versionId);
+  if (!version) return;
+
+  const versionContent = version.hasContent
+    ? await getProjectVersionContent(id, versionId)
+    : undefined;
+
+  const currentSnapshot: ProjectVersion = {
+    id: randomUUID(),
+    savedAt: new Date().toISOString(),
+    launchUrl: existingProject.launchUrl,
+    uploadedHtml: existingProject.uploadedHtml,
+    uploadedFiles: existingProject.uploadedFiles,
+    entryPath: existingProject.entryPath,
+  };
+  const versions = [
+    ...(existingProject.versions ?? []).filter((v) => v.id !== versionId),
+    currentSnapshot,
+  ].slice(-MAX_PROJECT_VERSIONS);
+
+  const needsReReview = existingProject.status === "on_display";
+
+  await updateProject(id, {
+    ...toUpdateInput(existingProject),
+    launchUrl: version.launchUrl,
+    uploadedHtml: versionContent?.uploadedHtml,
+    uploadedFiles: versionContent?.uploadedFiles,
+    entryPath: version.entryPath,
+    status: needsReReview ? "pending_review" : existingProject.status,
+    versions,
+  });
+
+  revalidatePath("/manage");
+  revalidatePath("/my");
+  revalidatePath("/");
+  revalidatePath(`/projects/${id}`);
+  revalidatePath(`/my/${id}/versions`);
 }
