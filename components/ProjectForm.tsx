@@ -550,6 +550,9 @@ export function ProjectForm({
             ))}
           </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400">{f.launchModeNote}</p>
+          {rule && !rule.allowFileUpload && hasExistingUpload && (
+            <p className="text-xs text-amber-700 dark:text-amber-400">{f.fileUploadDisabledExistingKept}</p>
+          )}
         </div>
 
         {activeLaunchMode === "url" ? (
