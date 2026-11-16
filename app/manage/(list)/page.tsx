@@ -130,6 +130,12 @@ export default async function ManagePage() {
                             {dict.categories[project.category] ?? project.category}
                             {project.grade ? ` · ${project.grade}` : ""} · {project.creatorName}
                           </span>
+                          {project.statusNote && (
+                            <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                              <span className="font-semibold">{dict.manage.statusNotePreviewLabel}: </span>
+                              {project.statusNote}
+                            </p>
+                          )}
                         </div>
                       </div>
 

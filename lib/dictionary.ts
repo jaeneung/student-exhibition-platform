@@ -220,6 +220,7 @@ const ko = {
     checkLinksError: "링크를 확인하는 중 문제가 발생했어요. 다시 시도해 주세요.",
     linkBrokenBadge: "❗",
     linkBrokenTooltip: "링크가 응답하지 않아요 (마지막 확인: {date})",
+    statusNotePreviewLabel: "학생에게 보이는 메모",
   },
   auth: {
     loginTitle: "교사 로그인",
@@ -609,6 +610,7 @@ const en: Dictionary = {
     checkLinksError: "Something went wrong while checking links. Please try again.",
     linkBrokenBadge: "❗",
     linkBrokenTooltip: "This link isn't responding (last checked: {date})",
+    statusNotePreviewLabel: "Note shown to student",
   },
   auth: {
     loginTitle: "Teacher Login",
