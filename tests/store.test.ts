@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProjectSubmissionInput } from "@/lib/types";
 
 let tempDir: string;
@@ -125,7 +125,15 @@ describe("updateProject", () => {
     const { createProject, updateProject } = await import("@/lib/store");
     const project = await createProject(baseSubmission);
     const before = project.updatedAt;
+    // On a fast enough machine, create and update can land in the same
+    // millisecond — new Date().toISOString()'s only resolution — making
+    // `before`/`after` equal through no fault of updateProject itself.
+    // Fake-advancing the clock between the two calls is what the test
+    // actually needs: a real time difference, not a real sleep.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(Date.now() + 1000));
     const updated = await updateProject(project.id, { ...baseSubmission, status: "on_display" });
+    vi.useRealTimers();
     expect(updated?.status).toBe("on_display");
     expect(updated?.updatedAt).not.toBe(before);
   });
