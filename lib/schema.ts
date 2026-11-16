@@ -60,6 +60,7 @@ export function getManagementSchema(dict: Dictionary) {
   return z.object({
     ...buildBaseProjectFields(dict.validation),
     status: z.enum(EXHIBITION_STATUSES),
+    statusNote: z.string().trim().max(500, format(dict.validation.textMax, { max: 500 })).optional(),
   });
 }
 export type ManagementFormValues = z.infer<ReturnType<typeof getManagementSchema>>;

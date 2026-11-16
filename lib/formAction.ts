@@ -36,6 +36,7 @@ export interface SubmittedFormValues {
   technologies: string;
   handsOnAvailable: boolean;
   status: string;
+  statusNote: string;
   launchMode: string;
   launchUrl: string;
 }
@@ -79,6 +80,7 @@ export function readProjectFormData(formData: FormData) {
     technologies: formData.get("technologies")?.toString() ?? "",
     handsOnAvailable: formData.get("handsOnAvailable") === "on",
     status: formData.get("status")?.toString() ?? "",
+    statusNote: formData.get("statusNote")?.toString() ?? "",
   };
 }
 
@@ -430,5 +432,6 @@ export function managementValuesToProjectFields(
   return {
     ...submissionValuesToProjectFields(values, resolved),
     status: values.status as ExhibitionStatus,
+    statusNote: values.statusNote || undefined,
   };
 }

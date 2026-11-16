@@ -151,6 +151,13 @@ export interface Project {
   uploadedFiles?: Record<string, UploadedFile>;
   entryPath?: string;
   status: ExhibitionStatus;
+  /** A short note a teacher can leave when changing a project's status —
+   * shown to the owning student on /my regardless of locale (it's teacher-
+   * authored free text, not part of the translations overlay). Lets a
+   * teacher explain *why* a project is private/still pending instead of the
+   * student seeing only a bare status badge with no way to know what to fix.
+   * Never set by a student submission. */
+  statusNote?: string;
   handsOnAvailable: boolean;
   createdAt: string;
   updatedAt: string;

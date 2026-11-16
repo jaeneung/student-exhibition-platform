@@ -845,6 +845,19 @@ export function ProjectForm({
               ))}
             </select>
           </Field>
+
+          <Field id="statusNote" label={f.statusNote} hint={f.statusNoteHint} error={errors.statusNote}>
+            <textarea
+              id="statusNote"
+              name="statusNote"
+              rows={2}
+              defaultValue={errorValues?.statusNote ?? project?.statusNote}
+              aria-invalid={Boolean(errors.statusNote)}
+              aria-describedby={errors.statusNote ? "statusNote-error" : "statusNote-hint"}
+              className={inputClass}
+              placeholder={f.statusNotePlaceholder}
+            />
+          </Field>
         </FormSection>
       )}
 

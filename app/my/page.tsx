@@ -77,6 +77,12 @@ export default async function MyProjectsPage() {
                       {dict.categories[project.category] ?? project.category}
                       {project.grade ? ` · ${project.grade}` : ""}
                     </span>
+                    {project.statusNote && (
+                      <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                        <span className="font-semibold">{my.statusNoteLabel}: </span>
+                        {project.statusNote}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
