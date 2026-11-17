@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/EmptyState";
+import { LinkBrokenBadge } from "@/components/LinkBrokenBadge";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getCategoryStyle } from "@/lib/categoryStyles";
-import { getDictionary } from "@/lib/dictionary";
+import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getProjectsByOwner } from "@/lib/store";
@@ -72,6 +73,7 @@ export default async function MyProjectsPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold text-zinc-900 dark:text-zinc-50">{project.title}</span>
                       <StatusBadge status={project.status} label={dict.status[project.status]} />
+                      <LinkBrokenBadge linkStatus={project.linkStatus} dict={dict} locale={locale} />
                     </div>
                     <span className="text-sm text-zinc-600 dark:text-zinc-400">
                       {dict.categories[project.category] ?? project.category}
@@ -81,6 +83,16 @@ export default async function MyProjectsPage() {
                       <p className="rounded-lg bg-amber-50 px-2.5 py-1.5 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                         <span className="font-semibold">{my.statusNoteLabel}: </span>
                         {project.statusNote}
+                      </p>
+                    )}
+                    {project.linkStatus && !project.linkStatus.ok && (
+                      <p className="rounded-lg bg-red-50 px-2.5 py-1.5 text-sm text-red-900 dark:bg-red-950 dark:text-red-200">
+                        {format(my.linkBrokenHint, {
+                          date: new Date(project.linkStatus.checkedAt).toLocaleString(
+                            locale === "ko" ? "ko-KR" : "en-US",
+                            { dateStyle: "medium", timeStyle: "short" }
+                          ),
+                        })}
                       </p>
                     )}
                   </div>

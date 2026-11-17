@@ -262,6 +262,8 @@ const ko = {
     emptyMessage: "프로젝트를 제출하면 여기에서 관리할 수 있어요.",
     submitNewLink: "새 프로젝트 제출하기",
     statusNoteLabel: "선생님 메모",
+    linkBrokenHint:
+      "⚠️ 지금 실행 링크가 열리지 않는 것 같아요 (마지막 확인: {date}). 링크를 다시 확인하고 필요하면 고쳐서 저장해 주세요.",
     editLink: "수정",
     versionsLink: "버전 기록",
     backToMy: "← 내 프로젝트로 돌아가기",
@@ -652,6 +654,8 @@ const en: Dictionary = {
     emptyMessage: "Once you submit a project, you'll be able to manage it here.",
     submitNewLink: "Submit a New Project",
     statusNoteLabel: "Note from teacher",
+    linkBrokenHint:
+      "⚠️ This launch link doesn't seem to be working right now (last checked: {date}). Please check it and fix it if needed.",
     editLink: "Edit",
     versionsLink: "Version History",
     backToMy: "← Back to My Projects",
