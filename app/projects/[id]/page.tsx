@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { HeroBackgroundImage } from "@/components/HeroBackgroundImage";
@@ -9,6 +10,40 @@ import { format, getDictionary } from "@/lib/dictionary";
 import { getLocale } from "@/lib/i18n";
 import { localizeProject } from "@/lib/projectLocalization";
 import { getPublicProjectById } from "@/lib/store";
+
+/** Without this, every shared project link (QR code, KakaoTalk, Discord,
+ * etc.) previewed with the same generic site title/description from the
+ * root layout — a visitor couldn't tell which project a link was for before
+ * clicking it. Falls back to the root layout's own generic metadata (rather
+ * than throwing) for an unknown/private id; the page component's own
+ * notFound() call still produces the real 404 — this only affects the
+ * <head> tags, never the response status. */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const { id } = await params;
+  const projectRaw = await getPublicProjectById(id);
+
+  if (!projectRaw) {
+    return { title: dict.brand.name };
+  }
+
+  const project = localizeProject(projectRaw, locale);
+  const title = `${project.title} - ${dict.brand.name}`;
+  const description = project.shortDescription;
+  const images = project.coverImageUrl ? [{ url: project.coverImageUrl }] : undefined;
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, images },
+    twitter: { card: "summary_large_image", title, description, images },
+  };
+}
 
 function DetailSection({
   icon,
